@@ -569,25 +569,83 @@ window.filLog=async()=>{
 
 /* ---------- jobs ---------- *//* ---------- jobs ---------- */
 function renderJobs(){
-  const rows=Object.entries(state.jobs||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
-  let html=tabHead('02','JOBS','ongoing work')+`<div class="bar">
-    <input id="j-title" placeholder="Job name (e.g. 50x keychains for Gerry)">
-    <select id="j-status"><option>queued</option><option>printing</option><option>done</option><option>on hold</option></select>
-    <button class="btn" onclick="addJob()">+ Log job</button></div>`;
-  if(!rows.length)html+='<div class="empty">No jobs logged.</div>';
-  html+='<div class="cards">'+rows.map(([id,j])=>`
-    <div class="card"><h3>${esc(j.title)}</h3>
-      <div class="meta">${esc(j.created||'')}</div>
-      <div><span class="badge ${j.status==='done'?'b-ok':j.status==='on hold'?'b-bad':j.status==='printing'?'b-info':'b-warn'}">${esc(j.status)}</span></div>
+  const jobs=Object.entries(state.jobs||{}).map(([id,j])=>({id,kind:j.kind||'print',...j}))
+    .sort((a,b)=>(b.created||'').localeCompare(a.created||''));
+  const prints=jobs.filter(j=>j.kind==='print'), todos=jobs.filter(j=>j.kind==='todo');
+  const openP=prints.filter(j=>j.status!=='done'), doneP=prints.filter(j=>j.status==='done');
+  const openT=todos.filter(j=>!j.done), doneT=todos.filter(j=>j.done);
+  const stat=(k,v,n,cls='')=>`<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  const badge=j=>j.status==='done'?'b-ok':j.status==='on hold'?'b-bad':j.status==='printing'?'b-info':'b-warn';
+
+  let html=tabHead('02','JOBS','printer work & to-dos')+`<div class="stats">
+    ${stat('Printer jobs',openP.length,prints.filter(j=>j.status==='printing').length+' printing now','ok')}
+    ${stat('Queued',prints.filter(j=>j.status==='queued').length,'waiting for a machine','warn')}
+    ${stat('Open to-dos',openT.length,todos.length+' total')}
+    ${stat('Done',doneP.length+doneT.length,'all time')}
+  </div>`;
+
+  // ---- PRINTER JOBS ----
+  html+=`<div class="tabhead" style="margin-top:6px"><span class="n">A</span><h2 style="font-size:15px">PRINTER JOBS</h2><span class="sub">physical prints — schedule onto machines</span></div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="bar" style="margin-top:4px;margin-bottom:0">
+      <input id="j-title" placeholder="What's printing (e.g. Gastly ball ×4)">
+      <select id="j-printer" style="max-width:140px"><option value="">printer…</option>${PRINTERS.map(p=>`<option>${p}</option>`).join('')}</select>
+      <input id="j-eta" type="date" value="${today()}" style="max-width:150px" title="ETA">
+      <button class="btn" onclick="addJob()">+ Log print</button>
+    </div>
+  </div>`;
+  if(!prints.length)html+='<div class="empty">No printer jobs yet.</div>';
+  html+='<div class="cards">'+prints.map(j=>`
+    <div class="card" style="border-left:3px solid ${j.status==='done'?'var(--ok)':j.status==='printing'?'var(--acc)':'var(--bord)'}">
+      <h3>${esc(j.title)}</h3>
+      <div class="meta">${esc(j.created||'')}${j.printer?' · <b>'+esc(j.printer)+'</b>':''}${j.eta?' · ETA '+esc(j.eta):''}</div>
+      <div><span class="badge ${badge(j)}">${esc(j.status)}</span></div>
       <div class="actions">
-        ${j.status!=='done'?`<button onclick="setJob('${id}','printing')">▶ printing</button><button onclick="setJob('${id}','done')">✔ done</button>`:''}
-        ${j.status!=='on hold'?`<button onclick="setJob('${id}','on hold')">⏸ hold</button>`:''}
-        <button class="danger" onclick="del('jobs/${id}')">✕</button></div></div>`).join('')+'</div>';
+        ${j.status!=='done'?`<button onclick="setJob('${j.id}','printing')">▶ printing</button><button onclick="setJob('${j.id}','done')">✔ done</button>`:''}
+        ${j.status!=='on hold'&&j.status!=='done'?`<button onclick="setJob('${j.id}','on hold')">⏸ hold</button>`:''}
+        ${j.status==='done'?`<button onclick="setJob('${j.id}','queued')">↺ reopen</button>`:''}
+        <button class="danger" onclick="del('jobs/${j.id}')">✕</button>
+      </div></div>`).join('')+'</div>';
+  if(doneP.length)html+=`<details style="margin-top:10px"><summary>Completed prints (${doneP.length})</summary><div class="cards" style="margin-top:10px">${doneP.map(j=>`
+    <div class="card"><h3>${esc(j.title)}</h3><div class="meta">${esc(j.created||'')}${j.printer?' · '+esc(j.printer):''}</div>
+    <div class="actions"><button onclick="setJob('${j.id}','queued')">↺ reopen</button><button class="danger" onclick="del('jobs/${j.id}')">✕</button></div></div>`).join('')}</div></details>`;
+
+  // ---- TO-DOS ----
+  html+=`<div class="tabhead" style="margin-top:22px"><span class="n">B</span><h2 style="font-size:15px">TO-DOS</h2><span class="sub">human work — files, orders, admin</span></div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="bar" style="margin-top:4px;margin-bottom:0">
+      <input id="t-title" placeholder="What needs doing (e.g. slice Eevee ball file)" onkeydown="if(event.key==='Enter')addTodo()">
+      <select id="t-who" style="max-width:110px"><option>James</option><option>Jammin</option><option>Ben</option></select>
+      <select id="t-pri" style="max-width:110px"><option value="normal">normal</option><option value="high">high</option><option value="low">low</option></select>
+      <button class="btn" onclick="addTodo()">+ Add to-do</button>
+    </div>
+  </div>`;
+  if(!openT.length)html+='<div class="empty">Nothing open — either you\'re on top of it or you forgot everything.</div>';
+  else html+=openT.map(j=>`
+    <div class="note" style="border-left:3px solid ${j.pri==='high'?'var(--bad)':j.pri==='low'?'var(--bord)':'var(--warn)'}">
+      <b>${esc(j.title)}</b>
+      <div class="meta"><span><span class="badge ${j.pri==='high'?'b-bad':j.pri==='low'?'':'b-warn'}">${esc(j.pri||'normal')}</span> for <b>${esc(j.who||'—')}</b> · ${esc(j.created||'')}</span>
+      <span><button class="btn ghost" style="padding:3px 10px" onclick="doneTodo('${j.id}')">✔ done</button> <button class="btn ghost" style="padding:3px 10px" onclick="del('jobs/${j.id}')">✕</button></span></div>
+    </div>`).join('');
+  if(doneT.length)html+=`<details style="margin-top:10px"><summary>Done to-dos (${doneT.length})</summary>${doneT.map(j=>`
+    <div class="note" style="opacity:.65"><b style="text-decoration:line-through">${esc(j.title)}</b>
+    <div class="meta"><span>${esc(j.who||'')}</span><span>${esc(j.doneDate||'')} <button class="btn ghost" style="padding:2px 8px" onclick="del('jobs/${j.id}')">✕</button></span></div></div>`).join('')}</details>`;
   return html;
 }
-window.addJob=()=>{const t=$('j-title').value.trim();if(!t)return;add('jobs',{title:t,status:$('j-status').value,created:today()+' '+new Date().toTimeString().slice(0,5)});$('j-title').value='';};
+window.addJob=()=>{
+  const t=$('j-title').value.trim();if(!t)return alert('What are we printing, kid?');
+  add('jobs',{kind:'print',title:t,status:'queued',printer:$('j-printer').value||'',eta:$('j-eta').value,created:today()+' '+new Date().toTimeString().slice(0,5)});
+  $('j-title').value='';
+};
 window.setJob=(id,s)=>up('jobs/'+id,{status:s});
+window.addTodo=()=>{
+  const t=$('t-title').value.trim();if(!t)return alert('Give the to-do a name.');
+  add('jobs',{kind:'todo',title:t,who:$('t-who').value,pri:$('t-pri').value,done:false,created:today()+' '+new Date().toTimeString().slice(0,5)});
+  $('t-title').value='';
+};
+window.doneTodo=id=>up('jobs/'+id,{done:true,status:'done',doneDate:today()});
 
+/* ---------- sliced job assignments ---------- */
 /* ---------- sliced job assignments ---------- */
 function renderAssign(){
   const rows=Object.entries(state.assign||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
