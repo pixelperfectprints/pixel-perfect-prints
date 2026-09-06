@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Perfect Prints — Custom 3D Printing</title>
+<meta name="description" content="Custom 3D printing from a multi-printer Bambu farm. One-offs to production runs, engineering-grade materials, fast turnaround. Browse the catalogue or get a quote.">
+<meta property="og:title" content="Pixel Perfect Prints — Custom 3D Printing">
+<meta property="og:description" content="Got an idea? We'll print it. Multi-printer farm, engineering-grade materials, fast turnaround.">>
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0b0518">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0518'/%3E%3Cpath d='M16 6l9 15H7z' fill='none' stroke='%23ff2ea6' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='18' r='2.6' fill='%2300e5ff'/%3E%3C/svg%3E">
+<script src="firebase-config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0518; --bg2:#100a24; --card:#150d2e; --card2:#1c1240;
+  --fg:#eae6ff; --mut:#9a8fc4; --bord:#2c1e5c;
+  --neon:#ff2ea6;   /* hot pink neon */
+  --cyan:#00e5ff;   /* electric cyan */
+  --lime:#b6ff2e;   /* acid lime — sparing */
+  --grad:linear-gradient(92deg,#ff2ea6,#7a2eff 55%,#00e5ff);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:'Rajdhani',system-ui,sans-serif;font-size:17px;line-height:1.55}
+/* city-glow backdrop */
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:
+  radial-gradient(ellipse 60% 40% at 85% -5%,rgba(255,46,166,.14),transparent 60%),
+  radial-gradient(ellipse 50% 35% at 8% 20%,rgba(0,229,255,.09),transparent 60%),
+  radial-gradient(ellipse 70% 45% at 50% 110%,rgba(122,46,255,.12),transparent 65%),
+  repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.012) 3px 4px)}
+h1,h2,h3,h4{font-family:'Orbitron','Rajdhani',sans-serif;letter-spacing:.02em}
+::selection{background:var(--neon);color:#12001f}
+
+header{position:sticky;top:0;z-index:20;background:rgba(11,5,24,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--bord);box-shadow:0 1px 24px rgba(255,46,166,.12);padding:0 28px;display:flex;align-items:center;gap:20px;height:66px}
+.logo{display:flex;align-items:center;gap:11px;font-family:'Orbitron';font-weight:900;font-size:18px;text-transform:uppercase;letter-spacing:.06em}
+.logo .dot{width:11px;height:11px;border-radius:50%;background:var(--grad);box-shadow:0 0 16px var(--neon),0 0 5px var(--cyan)}
+.logo em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+header .tag{color:var(--mut);font-size:14px;font-weight:500;border-left:1px solid var(--bord);padding-left:20px;text-transform:uppercase;letter-spacing:.14em}
+header nav{margin-left:auto;display:flex;gap:6px;align-items:center}
+header nav a{color:var(--mut);text-decoration:none;font-size:15px;font-weight:600;padding:8px 13px;border-radius:8px;text-transform:uppercase;letter-spacing:.08em}
+header nav a:hover{color:var(--cyan);text-shadow:0 0 12px rgba(0,229,255,.7)}
+.btn{display:inline-block;background:var(--grad);color:#0b0518;border:none;padding:12px 24px;border-radius:9px;cursor:pointer;font-weight:700;font-size:15px;text-decoration:none;font-family:'Rajdhani';text-transform:uppercase;letter-spacing:.1em;transition:transform .12s,box-shadow .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 0 26px rgba(255,46,166,.5),0 0 60px rgba(122,46,255,.25)}
+.btn.ghost{background:transparent;color:var(--cyan);border:1px solid var(--cyan);box-shadow:inset 0 0 14px rgba(0,229,255,.08)}
+.btn.ghost:hover{box-shadow:0 0 18px rgba(0,229,255,.4),inset 0 0 18px rgba(0,229,255,.14);color:var(--cyan)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;min-height:530px;border-bottom:1px solid var(--bord)}
+.hero-l{padding:76px 28px 76px 48px;display:flex;flex-direction:column;justify-content:center}
+.kicker{display:inline-flex;align-items:center;gap:9px;color:var(--cyan);font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.22em;margin-bottom:18px}
+.kicker::before{content:"";width:28px;height:2px;background:var(--grad);box-shadow:0 0 8px var(--neon)}
+.hero h2{font-size:clamp(34px,4.6vw,58px);line-height:1.06;font-weight:900;margin-bottom:18px;text-transform:uppercase}
+.hero h2 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 22px rgba(255,46,166,.45))}
+.hero p{color:var(--mut);max-width:480px;margin-bottom:30px;font-size:18px;font-weight:500}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.hero-r{position:relative;background:var(--bg2);border-left:1px solid var(--bord);overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:48px;gap:16px}
+.hero-r::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(circle at 80% 15%,rgba(255,46,166,.2),transparent 45%),
+  radial-gradient(circle at 12% 88%,rgba(0,229,255,.13),transparent 42%),
+  repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,229,255,.02) 3px 4px)}
+.layer{position:relative;background:var(--card);border:1px solid var(--bord);border-radius:12px;padding:17px 19px;display:flex;align-items:center;gap:15px;transition:border-color .15s,box-shadow .15s}
+.layer:hover{border-color:var(--neon);box-shadow:0 0 22px rgba(255,46,166,.25)}
+.layer b{font-family:'Orbitron';font-size:14px;letter-spacing:.05em}
+.layer small{display:block;color:var(--mut);font-size:13px;margin-top:3px;font-weight:500}
+.layer .sw{width:40px;height:40px;border-radius:9px;flex:none;border:1px solid rgba(255,255,255,.1)}
+.layer.hot .sw{background:linear-gradient(135deg,#ff2ea6,#7a2eff);box-shadow:0 0 18px rgba(255,46,166,.6)}
+.layer.cool .sw{background:linear-gradient(135deg,#00e5ff,#0066ff);box-shadow:0 0 18px rgba(0,229,255,.5)}
+.layer.plain .sw{background:linear-gradient(135deg,#4a3d80,#241a4d)}
+
+/* marquee */
+.marquee{overflow:hidden;border-bottom:1px solid var(--bord);background:var(--bg2);padding:14px 0}
+.track{display:flex;gap:36px;width:max-content;animation:slide 30s linear infinite}
+.track span{display:flex;align-items:center;gap:9px;color:var(--mut);font-size:14px;font-weight:600;white-space:nowrap;text-transform:uppercase;letter-spacing:.1em}
+.track i{width:15px;height:15px;border-radius:50%;border:1px solid rgba(255,255,255,.14)}
+@keyframes slide{to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.track{animation:none}}
+
+main{max-width:1080px;margin:0 auto;padding:0 28px}
+section{padding:66px 0}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:32px}
+.sec-head .n{color:var(--neon);font-family:'Orbitron';font-size:14px;font-weight:700;letter-spacing:.2em;text-shadow:0 0 12px rgba(255,46,166,.6)}
+.sec-head h3{font-size:27px;font-weight:700;text-transform:uppercase}
+.sec-head p{color:var(--mut);font-size:15px;margin-left:auto;font-weight:500}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.prod{background:var(--card);border:1px solid var(--bord);border-radius:14px;overflow:hidden;transition:transform .15s,border-color .15s,box-shadow .2s;display:flex;flex-direction:column}
+.prod:hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 0 28px rgba(0,229,255,.22)}
+.prod img{width:100%;height:190px;object-fit:cover;display:block;background:var(--card2)}
+.prod .body{padding:16px;display:flex;flex-direction:column;flex:1}
+.prod h4{font-size:15px;margin-bottom:4px}
+.prod .price{color:var(--lime);font-weight:700;font-size:17px;margin:4px 0 8px;font-family:'Orbitron';text-shadow:0 0 10px rgba(182,255,46,.35)}
+.prod p{color:var(--mut);font-size:14.5px;flex:1;font-weight:500}
+.prod .btn{margin-top:14px;align-self:flex-start;padding:8px 16px;font-size:13px}
+
+.steps{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--bord);border-radius:14px;overflow:hidden;box-shadow:0 0 40px rgba(122,46,255,.1)}
+.step{padding:27px 22px;background:var(--card);border-right:1px solid var(--bord);position:relative}
+.step:last-child{border-right:none}
+.step .num{font-family:'Orbitron';font-size:12px;font-weight:700;color:var(--cyan);letter-spacing:.22em;margin-bottom:11px;text-shadow:0 0 10px rgba(0,229,255,.55)}
+.step h4{font-size:15px;margin-bottom:6px;text-transform:uppercase}
+.step p{color:var(--mut);font-size:14px;font-weight:500}
+.step::after{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:var(--grad);opacity:0;transition:opacity .2s;box-shadow:0 0 10px var(--neon)}
+.step:hover::after{opacity:1}
+
+.contact{display:grid;grid-template-columns:.9fr 1.1fr;border:1px solid var(--bord);border-radius:16px;overflow:hidden;box-shadow:0 0 44px rgba(255,46,166,.09)}
+.contact-l{background:var(--card);padding:38px;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.contact-l h3{font-size:25px;line-height:1.2;text-transform:uppercase}
+.contact-l h3 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.contact-l p{color:var(--mut);font-size:15px;font-weight:500}
+.contact-r{background:var(--bg2);padding:38px;border-left:1px solid var(--bord)}
+.contact input,.contact textarea{width:100%;background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:12px 15px;border-radius:9px;font-size:15px;margin-bottom:12px;font-family:'Rajdhani';font-weight:500;outline:none;transition:border-color .15s,box-shadow .15s}
+.contact input:focus,.contact textarea:focus{border-color:var(--cyan);box-shadow:0 0 14px rgba(0,229,255,.25)}
+.contact textarea{height:110px;resize:vertical}
+
+footer{border-top:1px solid var(--bord);margin-top:44px;padding:28px;display:flex;gap:16px;align-items:center;justify-content:center;color:var(--mut);font-size:14px;font-weight:500}
+footer a{color:var(--mut)}
+footer a:hover{color:var(--neon)}
+@media(max-width:860px){
+  .hero{grid-template-columns:1fr}.hero-r{display:none}.hero-l{padding:52px 28px}
+  .steps{grid-template-columns:1fr 1fr}.step:nth-child(2){border-right:none}.step:nth-child(-n+2){border-bottom:1px solid var(--bord)}
+  .contact{grid-template-columns:1fr}.contact-r{border-left:none;border-top:1px solid var(--bord)}
+  header .tag{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="dot"></span>PIXEL <em>PERFECT</em> PRINTS</div>
+  <span class="tag">Custom 3D printing · UK</span>
+  <nav>
+    <a href="#products">Products</a>
+    <a href="#process">How it works</a>
+    <a class="btn ghost" href="#contact">Get a quote</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <div class="hero-l">
+    <span class="kicker">Multi-printer farm · Fast turnaround</span>
+    <h2>Got an idea?<br><span>We'll print it.</span></h2>
+    <p>From one-off fixes to full production runs. Bambu multi-printer farm, engineering-grade materials, colour you can actually choose. Browse the catalogue or tell us what you need.</p>
+    <div class="hero-cta">
+      <a class="btn" href="#products">Browse products</a>
+      <a class="btn ghost" href="#contact">Custom work →</a>
+    </div>
+  </div>
+  <div class="hero-r">
+    <div class="layer hot"><span class="sw"></span><div><b>Neon Magenta PLA</b><small>Best seller · in stock</small></div></div>
+    <div class="layer cool"><span class="sw"></span><div><b>Electric Cyan PETG</b><small>Outdoor-grade · UV stable</small></div></div>
+    <div class="layer plain"><span class="sw"></span><div><b>Deep Violet ABS</b><small>Engineering batch · on request</small></div></div>
+  </div>
+</div>
+
+<div class="marquee"><div class="track" id="track"></div></div>
+
+<main>
+  <section id="products">
+    <div class="sec-head"><span class="n">01</span><h3>Products</h3><p>Live from the workshop floor</p></div>
+    <div class="grid" id="prodgrid"><p style="color:var(--mut)">Loading catalogue…</p></div>
+  </section>
+
+  <section id="process">
+    <div class="sec-head"><span class="n">02</span><h3>How it works</h3></div>
+    <div class="steps">
+      <div class="step"><div class="num">STEP 1</div><h4>Tell us</h4><p>Send the idea, part, or broken thing. Dimensions and quantity if you know them — a photo works too.</p></div>
+      <div class="step"><div class="num">STEP 2</div><h4>Quote</h4><p>Fast, honest price and lead time. No mystery fees, no "let me check with the manager."</p></div>
+      <div class="step"><div class="num">STEP 3</div><h4>We print</h4><p>Farm of Bambu printers runs it in parallel. Progress updates as it goes.</p></div>
+      <div class="step"><div class="num">STEP 4</div><h4>You get it</h4><p>Quality-checked, packed, shipped or collected. Printed right, or we tell you it can't be.</p></div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="sec-head"><span class="n">03</span><h3>Get a quote</h3></div>
+    <div class="contact">
+      <div class="contact-l">
+        <h3>Tell us what you need.<br><span>We'll tell you what it costs.</span></h3>
+        <p>Dimensions, quantity, material, colour, deadline — whatever you know. Rough sketches welcome.</p>
+      </div>
+      <div class="contact-r">
+        <input id="c-name" placeholder="Your name">
+        <input id="c-email" type="email" placeholder="Your email">
+        <textarea id="c-msg" placeholder="What do you need?"></textarea>
+        <button class="btn" onclick="sendEnquiry()">Send enquiry</button>
+        <p id="c-out" style="color:var(--mut);font-size:14px;margin-top:10px"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>Pixel Perfect Prints · Custom 3D printing · <a href="ops.html">Employee login</a></footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+const swatches=[['#ff2ea6','Neon Magenta'],['#00e5ff','Electric Cyan'],['#b6ff2e','Acid Lime'],['#7a2eff','Ultra Violet'],['#eae6ff','Chrome White'],['#16102e','Midnight'],['#ff5c1a','Ember'],['#00ffd1','Synthwave Teal'],['#ff2e5c','Laser Red'],['#8a7fff','Holo Purple'],['#ffd12e','Solar Yellow'],['#0b0518','Void Black']];
+document.getElementById('track').innerHTML=[...swatches,...swatches].map(([c,n])=>`<span><i style="background:${c};box-shadow:0 0 8px ${c}66"></i>${n} · in rotation</span>`).join('');
+
+const needCfg=!window.firebaseConfig||!firebaseConfig.apiKey||firebaseConfig.apiKey.startsWith('PASTE_');
+const placeholderImg='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="250" height="190"><rect fill="#1c1240" width="250" height="190"/><path d="M125 55 l45 80 h-90 z" fill="none" stroke="#ff2ea6" stroke-width="2.5" opacity=".8"/><circle cx="125" cy="98" r="4.5" fill="#00e5ff"/></svg>`);
+if(needCfg){
+  document.getElementById('prodgrid').innerHTML='<p style="color:var(--mut)">Catalogue not configured yet — paste your firebaseConfig into <code>firebase-config.js</code>.</p>';
+  document.querySelector('#contact .btn').addEventListener('click',()=>{document.getElementById('c-out').textContent='Enquiries need the Firebase config set up first.'});
+}else{
+  firebase.initializeApp(firebaseConfig);
+  window._db=firebase.database();
+  window._db.ref('ops/products').on('value',snap=>{
+    const prods=Object.entries(snap.val()||{}).filter(([,p])=>p&&!p.hidden);
+    const g=document.getElementById('prodgrid');
+    if(!prods.length){g.innerHTML='<p style="color:var(--mut)">Catalogue coming soon — ask us directly about custom work.</p>';return;}
+    g.innerHTML=prods.map(([,p])=>`
+      <div class="prod">
+        <img src="${p.img||placeholderImg}" alt="${p.name}" loading="lazy">
+        <div class="body"><h4>${p.name}</h4>${p.price?`<div class="price">£${p.price}</div>`:''}${p.desc?`<p>${p.desc}</p>`:''}
+        <a class="btn ghost" href="#contact" onclick="prefill(${JSON.stringify(p.name).replace(/"/g,'&quot;')})">Enquire →</a></div>
+      </div>`).join('');
+  },()=>{document.getElementById('prodgrid').innerHTML='<p style="color:var(--mut)">Catalogue temporarily unavailable.</p>';});
+}
+function prefill(name){const m=document.getElementById('c-msg');if(m&&!m.value)m.value="Hi — I'm interested in: "+name+'. ';}
+function sendEnquiry(){
+  const name=document.getElementById('c-name').value.trim(),email=document.getElementById('c-email').value.trim(),msg=document.getElementById('c-msg').value.trim(),out=document.getElementById('c-out');
+  if(!name||!email||!msg){out.textContent='Fill in all three fields, please.';return;}
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){out.textContent="That email address doesn't look right.";return;}
+  (window._db||firebase.database()).ref('ops/enquiries').push({name,email,msg,created:new Date().toISOString(),status:'new'}).then(
+    ()=>{out.textContent='✓ Sent — we\'ll get back to you shortly.';document.getElementById('c-msg').value='';},
+    ()=>{out.textContent='Something went wrong — try again, or email us directly.';});
+}
+</script>
+</body>
+</html>

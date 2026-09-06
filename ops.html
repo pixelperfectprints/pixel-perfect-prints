@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Perfect Prints — Ops</title>
+<script src="firebase-config.js"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0518'/%3E%3Cpath d='M16 6l9 15H7z' fill='none' stroke='%23ff2ea6' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='18' r='2.6' fill='%2300e5ff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0518; --bg2:#100a24; --card:#150d2e; --card2:#1c1240;
+  --fg:#eae6ff; --mut:#9a8fc4; --bord:#2c1e5c;
+  --acc:#00e5ff; --ok:#b6ff2e; --warn:#ffd12e; --bad:#ff2e5c;
+  --neon:#ff2ea6;
+  --grad:linear-gradient(92deg,#ff2ea6,#7a2eff 55%,#00e5ff);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Rajdhani',system-ui,sans-serif;font-size:15.5px;padding-bottom:60px}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:
+  radial-gradient(ellipse 60% 40% at 85% -5%,rgba(255,46,166,.13),transparent 60%),
+  radial-gradient(ellipse 50% 35% at 8% 20%,rgba(0,229,255,.08),transparent 60%),
+  repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.012) 3px 4px)}
+header{background:rgba(11,5,24,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--bord);box-shadow:0 1px 24px rgba(255,46,166,.12);padding:12px 18px;position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:17px;font-family:'Orbitron';font-weight:900;text-transform:uppercase;letter-spacing:.05em;flex:1}
+header h1 b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sync{font-size:12px;padding:3px 10px;border-radius:12px;background:var(--card2);color:var(--mut);font-weight:600}
+.sync.on{color:var(--ok);text-shadow:0 0 8px rgba(182,255,46,.5)}.sync.err{color:var(--bad)}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:none;border:none;color:var(--mut);padding:8px 12px;cursor:pointer;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid transparent}
+nav button.act{color:var(--cyan);border-color:var(--cyan);text-shadow:0 0 10px rgba(0,229,255,.6)}
+nav button:hover{color:var(--fg)}
+main{max-width:1020px;margin:0 auto;padding:16px}
+.bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.bar input,.bar select,.bar textarea{background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:8px 10px;border-radius:8px;font-size:14px;font-family:'Rajdhani';font-weight:500}
+.bar input:focus,.bar select:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 12px rgba(0,229,255,.22)}
+.bar input,.bar select{flex:1;min-width:120px}
+.btn{background:var(--grad);color:#16081f;border:1px solid rgba(255,255,255,.35);padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:800;font-size:14px;font-family:'Rajdhani';text-transform:uppercase;letter-spacing:.06em;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 12px rgba(122,46,255,.35);transition:transform .1s,box-shadow .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 0 18px rgba(255,46,166,.5),0 4px 16px rgba(0,0,0,.3)}{box-shadow:0 0 18px rgba(255,46,166,.45)}
+.btn.ghost{background:var(--card2);color:var(--cyan);border:1px solid var(--bord)}
+.btn.ghost:hover{border-color:var(--cyan);box-shadow:none}
+.btn.danger{background:var(--bad);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--bord);border-radius:12px;padding:14px;transition:border-color .15s;overflow:hidden}
+.card:hover{border-color:#3d2b78}
+.card h3{font-size:15px;margin-bottom:6px;word-break:break-word;font-family:'Orbitron';font-weight:700;letter-spacing:.02em}
+.card .meta{color:var(--mut);font-size:12.5px;margin-bottom:8px;font-weight:500}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-right:4px;text-transform:uppercase;letter-spacing:.05em}
+.b-ok{background:rgba(182,255,46,.12);color:var(--ok)}.b-warn{background:rgba(255,209,46,.12);color:var(--warn)}.b-bad{background:rgba(255,46,92,.14);color:var(--bad)}.b-info{background:rgba(0,229,255,.12);color:var(--cyan)}
+.stockline{display:flex;justify-content:space-between;padding:4px 0;font-size:14px;font-weight:500}
+.stockline b{font-size:15px}
+.actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.actions button{flex:0 1 auto;min-width:86px;background:#26204e;border:1px solid #4a3d85;color:#f0edff;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;transition:background .12s,border-color .12s}
+.actions button:hover{border-color:var(--cyan);box-shadow:0 0 10px rgba(0,229,255,.2)}
+.note{background:var(--card);border:1px solid var(--bord);border-radius:12px;padding:12px;margin-bottom:10px}
+.note .meta{color:var(--mut);font-size:12px;margin-top:6px;display:flex;justify-content:space-between}
+summary{cursor:pointer;font-size:13px;color:var(--mut);margin:4px 0 8px}
+details select,details input{background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:4px 8px;border-radius:6px;margin:0 4px}
+.empty{color:var(--mut);text-align:center;padding:30px;border:1px dashed var(--bord);border-radius:12px;font-weight:500}
+#login{max-width:400px;margin:60px auto;background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:24px;box-shadow:0 0 50px rgba(255,46,166,.14)}
+#login h2{font-family:'Orbitron';text-transform:uppercase;letter-spacing:.04em}
+#login input{width:100%;margin-bottom:10px;background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:10px;border-radius:8px;font-size:14px;font-family:'Rajdhani';font-weight:500}
+#login input:focus{outline:none;border-color:var(--cyan)}
+#login .btn{width:100%}
+.err{background:rgba(255,46,92,.12);color:#ff8fb0;padding:10px;border-radius:8px;margin:10px 0;font-size:13px}
+.mut{color:var(--mut);font-size:13px;font-weight:500}
+.k{color:var(--cyan)}
+#prodform{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#prodform label{font-size:12px;color:var(--mut);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em}
+#prodform input,#prodform textarea{width:100%;background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:8px;border-radius:8px;font-size:14px;font-family:'Rajdhani'}
+#prodform textarea{height:60px;resize:vertical}
+#setup textarea{width:100%;height:110px;background:var(--card2);color:var(--fg);border:1px solid var(--bord);border-radius:8px;padding:10px;font-family:monospace;font-size:12px;margin:10px 0}
+@media(max-width:600px){.cards{grid-template-columns:1fr}#prodform{grid-template-columns:1fr}}
+
+/* filament table dashboard */
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--bord);border-radius:10px;padding:12px 14px}
+.stat .k{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.stat .v{font-size:21px;font-weight:700;margin-top:3px;font-family:'Orbitron'}
+.stat .n{font-size:11px;color:var(--mut);margin-top:2px}
+.stat.ok .v{color:var(--ok)} .stat.warn .v{color:var(--warn)} .stat.bad .v{color:var(--bad)}
+.tbl-wrap{background:var(--card);border:1px solid var(--bord);border-radius:10px;overflow:auto;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--card2);text-align:left;padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);position:sticky;top:0;white-space:nowrap}
+td{padding:8px 12px;border-top:1px solid var(--bord);white-space:nowrap}
+tr:hover td{background:var(--card2)}
+.sw{display:inline-block;width:13px;height:13px;border-radius:4px;border:1px solid rgba(255,255,255,.25);vertical-align:-2px;margin-right:7px}
+.lvbar{width:80px;height:6px;background:#241a4d;border-radius:3px;display:inline-block;overflow:hidden;vertical-align:middle}
+.lvbar i{display:block;height:100%;border-radius:3px}
+.who{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.who.J{background:rgba(0,229,255,.13);color:var(--cyan)}
+.who.B{background:rgba(255,46,166,.13);color:var(--neon)}
+.who.S{background:rgba(154,143,196,.15);color:var(--mut)}
+.flag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.flag.ok{background:rgba(182,255,46,.13);color:var(--ok)}
+.flag.low{background:rgba(255,209,46,.13);color:var(--warn)}
+.flag.out{background:rgba(255,46,92,.14);color:var(--bad)}
+.flag.inc{background:rgba(0,229,255,.13);color:var(--cyan)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:var(--mut)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.panel{background:var(--card);border:1px solid var(--bord);border-radius:10px;padding:14px}
+.panel h3{font-size:12px;margin-bottom:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+.mv{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--bord);font-size:12.5px}
+.mv:first-of-type{border-top:none}
+.mv .when{color:var(--mut);width:64px;flex-shrink:0}
+.mv .what{flex:1;padding-right:8px}
+.mv .amt{font-variant-numeric:tabular-nums;font-weight:700}
+.mv .amt.neg{color:var(--bad)} .mv .amt.pos{color:var(--ok)}
+.form-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
+.form-row input,.form-row select{background:var(--card2);border:1px solid var(--bord);border-radius:7px;padding:7px 10px;color:var(--fg);font-size:13px;font-family:'Rajdhani'}
+.log{max-height:260px;overflow:auto}
+@media(max-width:900px){.stats{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}}
+
+/* incoming stat hover popout */
+.stat.inc-card,.stat.low-card{position:relative;cursor:help}
+.inc-pop{position:absolute;top:calc(100% + 10px);left:0;z-index:60;background:var(--card2);border:1px solid var(--cyan);border-radius:10px;padding:12px 14px;box-shadow:0 10px 34px rgba(0,0,0,.55);width:360px;max-width:82vw;max-height:300px;overflow:auto;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .16s,transform .16s,visibility .16s}
+.stat.inc-card:hover .inc-pop,.stat.inc-card:focus .inc-pop,.stat.low-card:hover .inc-pop,.stat.low-card:focus .inc-pop{opacity:1;visibility:visible;transform:translateY(0)}
+.inc-row{padding:7px 0;border-top:1px solid var(--bord);font-size:12.5px}
+.inc-row:first-of-type{border-top:none}
+.inc-row b{font-family:'Orbitron';font-size:12px}
+.inc-note{color:var(--mut);font-size:11.5px;margin-top:2px}
+
+/* pokeball colour popup in filament table */
+.pbcell{position:relative;cursor:help}
+.pbflag{background:rgba(255,46,166,.13);color:var(--neon);font-size:10px}
+.pb-pop{position:absolute;left:104%;top:-4px;z-index:70;background:var(--card2);border:1px solid var(--neon);border-radius:10px;padding:10px 12px;box-shadow:0 10px 34px rgba(0,0,0,.6);width:300px;max-width:70vw;max-height:340px;overflow:auto;opacity:0;visibility:hidden;transform:translateX(-6px);transition:opacity .16s,transform .16s,visibility .16s}
+.pbcell:hover .pb-pop{opacity:1;visibility:visible;transform:translateX(0)}
+.pb-row{padding:4px 0;border-top:1px solid var(--bord);font-size:12px;font-weight:600}
+.pb-row:first-of-type{border-top:none}
+@media(max-width:700px){.pb-pop{left:auto;right:0;width:220px}}
+
+/* filament tighten */
+.fil-filters{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.fil-filters select{background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:5px 8px;border-radius:7px;font-size:12px;font-family:'Rajdhani';cursor:pointer}
+.fil-filters select:focus{outline:none;border-color:var(--cyan)}
+.fil-hide{font-size:12.5px;color:var(--mut);display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-weight:600}
+.fil-hide input{accent-color:var(--neon);cursor:pointer}
+.fil-count{font-size:11.5px}
+.stats{gap:8px;margin-bottom:10px}
+.stat{padding:9px 12px}
+.stat .v{font-size:18px}
+/* incoming scrolling banner */
+.fil-banner{overflow:hidden;border:1px solid var(--bord);border-radius:9px;background:var(--card);margin-bottom:14px}
+.fil-track{display:flex;gap:40px;width:max-content;padding:9px 14px;animation:filslide 22s linear infinite}
+.fil-inc{white-space:nowrap;font-size:13px;color:var(--fg);font-weight:500}
+.fil-inc b{color:var(--cyan);font-family:'Orbitron';font-size:12.5px}
+@keyframes filslide{to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.fil-track{animation:none}}
+
+/* tab headers */
+.tabhead{display:flex;align-items:baseline;gap:12px;margin:2px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--bord)}
+.tabhead h2{font-family:'Orbitron';font-size:17px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:0}
+.tabhead h2 b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tabhead .n{color:var(--neon);font-family:'Orbitron';font-size:12px;font-weight:700;letter-spacing:.16em}
+.tabhead .sub{color:var(--mut);font-size:13px;font-weight:500;margin-left:auto}
+
+/* bar buttons: never squeezed by flexing inputs */
+.bar .btn{flex:0 0 auto;white-space:nowrap}
+
+/* stock tab */
+.stbtn{background:#26204e;border:1px solid #4a3d85;color:#f0edff;padding:3px 9px;border-radius:6px;cursor:pointer;font-size:11.5px;font-weight:700;white-space:nowrap}
+.stbtn:hover{border-color:var(--cyan);box-shadow:0 0 8px rgba(0,229,255,.2)}
+.stinput{width:56px;background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:3px 6px;border-radius:6px;font-size:12px;font-weight:600}
+.stinput:focus{outline:none;border-color:var(--cyan)}
+</style>
+</head>
+<body>
+<header id="hdr" style="display:none">
+  <h1>🖨️ PIXEL <b>PERFECT</b> PRINTS — OPS</h1>
+  <nav>
+    <button data-t="filament">Filament</button>
+    <button data-t="jobs">Jobs</button>
+    <button data-t="assign">Sliced jobs</button>
+    <button data-t="files">Files</button>
+    <button data-t="stock">Stock</button>
+    <button data-t="xmas">Christmas</button>
+    <button data-t="costs">Costs</button>
+    <button data-t="queue">Queue</button>
+    <button data-t="products">Products</button>
+    <button data-t="enquiries">Enquiries</button>
+    <button data-t="orders">Orders</button>
+    <button data-t="notes">Notes</button>
+  </nav>
+  <span class="sync" id="sync">connecting…</span>
+  <span class="mut" id="userbox"></span>
+  <a class="btn ghost" style="padding:5px 12px;text-decoration:none;text-transform:uppercase" href="index.html" target="_blank">⬈ View site</a>
+  <button class="btn ghost" style="padding:4px 10px" onclick="logout()">Log out</button>
+</header>
+<main id="app" style="display:none"></main>
+<div id="login" style="display:none">
+  <h2>Employee access</h2>
+  <p class="mut" style="margin:8px 0 14px">Jammin &amp; James only.</p>
+  <input id="l-email" type="email" placeholder="you@example.com">
+  <input id="l-pass" type="password" placeholder="Password">
+  <div class="err" id="lerr" style="display:none"></div>
+  <button class="btn" onclick="doLogin()">Log in</button>
+  <p class="mut" style="margin-top:10px">First time? Set up your account: <a href="#" class="k" onclick="doSignup();return false">create it here</a> (uses the email + password above).</p>
+</div>
+<div id="setup" style="display:none">
+  <h2>⚡ Firebase config needed</h2>
+  <p class="mut">Paste your firebaseConfig below (once per device), then log in.</p>
+  <textarea id="cfg" style="width:100%;height:110px;background:var(--card2);color:var(--fg);border:1px solid var(--bord);border-radius:8px;padding:10px;font-family:monospace;font-size:12px;margin:10px 0" placeholder='{"apiKey":"...","databaseURL":"..."}'></textarea>
+  <div class="err" id="cfgerr" style="display:none"></div>
+  <button class="btn" onclick="saveCfg()">Save</button>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script>
+const LS='printops_cfg';let db=null,storage=null,state={filament:{},jobs:{},orders:{},notes:{},assign:{},files:{},products:{},enquiries:{}};
+const tab=()=>localStorage.getItem('printops_tab')||'filament';
+const me=()=>{const e=firebase.auth().currentUser?.email||'';return /^james/i.test(e)?'James':'Jammin';};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+const $=id=>document.getElementById(id);
+function show(which){['login','setup','hdr','app'].forEach(i=>$(i).style.display=i===which||((which==='hdr')&&i==='app')?'':'none');}
+
+/* ---------- config ---------- */
+function saveCfg(){
+  const errEl=$('cfgerr');errEl.style.display='none';
+  const raw=$('cfg').value.trim();
+  try{
+    const a=raw.indexOf('{'),b=raw.lastIndexOf('}');
+    if(a<0||b<=a)throw new Error('No { } braces found — paste the whole firebaseConfig block.');
+    const c=JSON.parse(raw.slice(a,b+1).replace(/'/g,'"').replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g,'$1"$2":').replace(/,(\s*[}\]])/g,'$1'));
+    if(!c.databaseURL)throw new Error('Missing databaseURL — create the Realtime Database first, then re-copy the config.');
+    localStorage.setItem(LS,JSON.stringify(c));boot(c);
+  }catch(e){errEl.textContent='⚠ '+(e.message||e);errEl.style.display='block';}
+}
+
+/* ---------- auth ---------- */
+function doLogin(){
+  const e=$('lerr');e.style.display='none';
+  firebase.auth().signInWithEmailAndPassword($('l-email').value.trim(),$('l-pass').value)
+    .catch(err=>{e.textContent='⚠ '+err.message;e.style.display='block';});
+}
+function doSignup(){
+  const e=$('lerr');e.style.display='none';
+  firebase.auth().createUserWithEmailAndPassword($('l-email').value.trim(),$('l-pass').value)
+    .catch(err=>{e.textContent='⚠ '+err.message;e.style.display='block';});
+}
+function logout(){firebase.auth().signOut();}
+function boot(cfg){
+  firebase.initializeApp(cfg);
+  db=firebase.database();storage=firebase.storage();
+  firebase.auth().onAuthStateChanged(u=>{
+    if(u){
+      $('userbox').textContent=u.email+' ('+me()+')';
+      show('hdr');
+      db.ref('ops').on('value',snap=>{state=Object.assign({filament:{},jobs:{},orders:{},notes:{},assign:{},files:{},products:{},enquiries:{},fmoves:{},queue:{},costs:{}},snap.val()||{});render();filSeedOnce();},
+        err=>{const s=$('sync');s.textContent='⚠ '+err.message;s.className='sync err';});
+      const s=$('sync');s.textContent='● live';s.className='sync on';
+    } else show('login');
+  });
+}
+function up(path,val){return db.ref('ops/'+path).set(val);}
+function upd(path,val){return db.ref('ops/'+path).update(val);}
+const FIL_RECEIVED=JSON.parse((()=>{try{return localStorage.getItem('fil_received')||'[]'}catch{return '[]'}})());
+window.filRecvAll=async()=>{
+  if(!FIL_INCOMING.length)return alert('Nothing incoming to receive.');
+  if(!confirm('Receive all '+FIL_INCOMING.length+' incoming items into stock?'))return;
+  let done=0;
+  for(const x of FIL_INCOMING){ if(FIL_RECEIVED.includes(x.name))continue; try{await window.filRecv(x.name,true);done++;}catch(e){alert('Failed '+x.name+': '+e.message);} }
+  if(done)alert('Received '+done+' items.');
+  render();
+};
+window.filRecv=async(name,silent)=>{
+  // add incoming kg to the matching filament record (owner Jammin)
+  const item=FIL_INCOMING.find(x=>x.name===name); if(!item)return;
+  const id=String(name).replace(/[^\w ]/g,'');
+  const cur=(state.filament&&state.filament[id])||{};
+  const curKg=cur.kg!=null?+cur.kg:0, curSp=cur.spools!=null?+cur.spools:0;
+  const newKg=Math.round((curKg+item.kg)*1000)/1000, newSp=curSp+Math.round(item.kg);
+  await upd('filament/'+id,{kg:newKg,spools:newSp,owner:'J',name:item.name,type:item.type||cur.type||'PLA Matte'});
+  if(!FIL_RECEIVED.includes(name))FIL_RECEIVED.push(name);
+  localStorage.setItem('fil_received',JSON.stringify(FIL_RECEIVED));
+  await add('fmoves',{d:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),who:'J',
+    what:'received incoming — '+name+' (+'+item.kg+'kg)',amt:Math.round(item.kg*1000),ts:new Date().toISOString()});
+  if(!silent){render();}
+};
+
+function add(path,val){return db.ref('ops/'+path).push(val);}
+function del(path){return db.ref('ops/'+path).remove();}
+
+/* ---------- filament (table dashboard, vault-style, Firebase-backed) ---------- */
+const FIL_SEED=[
+  {name:"Lilac Purple",type:"PLA Matte",kg:1.00,spools:1,owner:"J",min:0.8,note:"Haunter ×20 run needs ~5.7kg — SHORT ~4.7kg. Reorder flagged.",sw:"#9a6bc4"},
+  {name:"Indigo Purple",type:"PLA",kg:1.00,spools:1,owner:"J",min:0.5,note:"Gastly/aura accents — confirm role.",sw:"#5b4bb5"},
+  {name:"Silk Silver",type:"PLA Silk",kg:0.75,spools:1,owner:"J",min:0.4,note:"",sw:"#c9ccd4"},
+  {name:"Grass Green",type:"PLA Matte",kg:0.75,spools:1,owner:"J",min:0.4,note:"",sw:"#6db54c"},
+  {name:"Dark Blue",type:"PLA Matte",kg:1.65,spools:2,owner:"J",min:0.5,note:"Two spools (800g + 850g).",sw:"#2e50a0"},
+  {name:"Ice Blue",type:"PLA Matte",kg:0.85,spools:1,owner:"J",min:0.4,note:"",sw:"#8fc4e8"},
+  {name:"Basic Green",type:"PLA Basic",kg:0.20,spools:1,owner:"J",min:0.3,note:"",sw:"#3f9e3f"},
+  {name:"Translucent Orange",type:"PETG",kg:0.30,spools:1,owner:"J",min:0.3,note:"",sw:"#f08c2e"},
+  {name:"Dark Red",type:"PLA Matte",kg:0.80,spools:1,owner:"J",min:0.4,note:"",sw:"#a83232"},
+  {name:"Translucent Pink",type:"PETG",kg:0.70,spools:1,owner:"J",min:0.3,note:"",sw:"#e87aa8"},
+  {name:"Translucent Blue",type:"PETG",kg:0.70,spools:1,owner:"J",min:0.3,note:"",sw:"#4d7ed9"},
+  {name:"Desert Tan",type:"PLA Matte",kg:0.20,spools:1,owner:"J",min:0.5,note:"Charizard belly ×15 needs ~440g — 200g will NOT cover it. Reorder (Bambu 11401).",sw:"#c9a86c"}
+];
+const FIL_INCOMING=[
+  {name:"Ivory White",type:"Refill 1kg ×4",kg:4,code:"11100",note:"Eye/frame/part plates across all Christmas lines"},
+  {name:"Lemon Yellow",type:"Refill 1kg ×4",kg:4,code:"11400",note:"Deck boxes / Pikachu tails"},
+  {name:"Scarlet Red",type:"Refill 1kg ×2",kg:2,code:"11200",note:"Charmander/Charizard accents — tight until this lands"},
+  {name:"Charcoal",type:"Refill 1kg ×8",kg:8,code:"11101",note:"Heaviest consumer: 9× Charizard + Gastly/Gengar/Haunter parts"},
+  {name:"Silk+ Gold",type:"1kg spool",kg:1,code:"13405",note:"Deck box accents"}
+];
+const FIL_SEED_MOVES=[
+  {d:"03 Sep",who:"J",what:"Shelf count — all 12 spools partial",amt:null},
+  {d:"03 Sep",who:"J",what:"Order placed — 19kg across 5 colours (Ivory/Lemon/Scarlet/Charcoal/Gold)",amt:null},
+  {d:"03 Sep",who:"J",what:"Christmas plan projection — Charcoal ~4.6kg, Ivory ~2.7kg",amt:null}
+];
+const WHO_NAME={J:"Jammin",B:"James",S:"Shared"};
+const EUR_PER_KG=11.50;
+const COST_SEED=[{"cat": "Custom Pokeballs", "name": "Pikachu", "min": 785.0, "grams": 323.7, "price": 16.0, "cost": 3.53, "margin": 12.47, "marginpct": 78.0, "pph": 0.95, "filcost": 3.72, "pph_calc": 0.95}, {"cat": "Custom Pokeballs", "name": "Raichu", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Bulbasaur", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Charmander", "min": 88.0, "grams": 50.3, "price": 16.0, "cost": 0.53, "margin": 15.47, "marginpct": 97.0, "pph": 10.54, "filcost": 0.58, "pph_calc": 10.55}, {"cat": "Custom Pokeballs", "name": "Squirtle", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Charmeleon", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Charizard", "min": 1892.0, "grams": 452.0, "price": 16.0, "cost": 5.26, "margin": 10.74, "marginpct": 67.0, "pph": 0.34, "filcost": 5.2, "pph_calc": 0.34}, {"cat": "Custom Pokeballs", "name": "Mew", "min": 210.0, "grams": 97.9, "price": 16.0, "cost": 1.06, "margin": 14.94, "marginpct": 93.0, "pph": 4.27, "filcost": 1.13, "pph_calc": 4.27}, {"cat": "Custom Pokeballs", "name": "Mew Blue", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Mewtwo", "min": 714.0, "grams": 151.0, "price": 16.0, "cost": 1.79, "margin": 14.21, "marginpct": 89.0, "pph": 1.19, "filcost": 1.74, "pph_calc": 1.19}, {"cat": "Custom Pokeballs", "name": "Gastly", "min": 219.0, "grams": 82.7, "price": 16.0, "cost": 0.91, "margin": 15.09, "marginpct": 94.0, "pph": 4.13, "filcost": 0.95, "pph_calc": 4.13}, {"cat": "Custom Pokeballs", "name": "Haunter", "min": 681.0, "grams": 379.3, "price": 16.0, "cost": 4.04, "margin": 11.96, "marginpct": 75.0, "pph": 1.05, "filcost": 4.36, "pph_calc": 1.05}, {"cat": "Custom Pokeballs", "name": "Gengar", "min": 178.0, "grams": 64.1, "price": 16.0, "cost": 0.71, "margin": 15.29, "marginpct": 96.0, "pph": 5.15, "filcost": 0.74, "pph_calc": 5.15}, {"cat": "Custom Pokeballs", "name": "Electabuzz", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Dragonite", "min": 198.0, "grams": 91.2, "price": 16.0, "cost": 0.98, "margin": 15.02, "marginpct": 94.0, "pph": 4.55, "filcost": 1.05, "pph_calc": 4.55}, {"cat": "Custom Pokeballs", "name": "Magmar", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Vulpix", "min": 559.0, "grams": 250.0, "price": 16.0, "cost": 2.71, "margin": 13.29, "marginpct": 83.0, "pph": 1.43, "filcost": 2.88, "pph_calc": 1.43}, {"cat": "Custom Pokeballs", "name": "Snorlax", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Poliwag", "min": 227.0, "grams": 75.8, "price": 16.0, "cost": 0.84, "margin": 15.16, "marginpct": 95.0, "pph": 4.01, "filcost": 0.87, "pph_calc": 4.01}, {"cat": "Custom Pokeballs", "name": "Togepi", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Darkrai", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Weezing", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Cyndaquil", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Meowth", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Persian", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Eevee", "min": 536.0, "grams": 230.9, "price": 16.0, "cost": 2.51, "margin": 13.49, "marginpct": 84.0, "pph": 1.51, "filcost": 2.66, "pph_calc": 1.51}, {"cat": "Custom Pokeballs", "name": "Jolteon", "min": 606.0, "grams": 196.8, "price": 16.0, "cost": 2.2, "margin": 13.8, "marginpct": 86.0, "pph": 1.37, "filcost": 2.26, "pph_calc": 1.37}, {"cat": "Custom Pokeballs", "name": "Vaporeon", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Flareon", "min": 1030.0, "grams": 362.3, "price": 16.0, "cost": 4.01, "margin": 11.99, "marginpct": 75.0, "pph": 0.7, "filcost": 4.17, "pph_calc": 0.7}, {"cat": "Custom Pokeballs", "name": "Espeon", "min": 576.0, "grams": 103.4, "price": 16.0, "cost": 1.26, "margin": 14.74, "marginpct": 92.0, "pph": 1.53, "filcost": 1.19, "pph_calc": 1.54}, {"cat": "Custom Pokeballs", "name": "Umbreon", "min": 1766.0, "grams": 798.7, "price": 16.0, "cost": 8.63, "margin": 7.37, "marginpct": 46.0, "pph": 0.25, "filcost": 9.19, "pph_calc": 0.25}, {"cat": "Custom Pokeballs", "name": "Glaceon", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Leafeon", "min": 227.0, "grams": 59.1, "price": 16.0, "cost": 0.68, "margin": 15.32, "marginpct": 96.0, "pph": 4.05, "filcost": 0.68, "pph_calc": 4.05}, {"cat": "Custom Pokeballs", "name": "Sylveon", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Starmie", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Zubat", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Ekans", "min": null, "grams": null, "price": 16.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Custom Pokeballs", "name": "Bellsprout", "min": 42.0, "grams": 8.2, "price": 16.0, "cost": 0.1, "margin": 15.9, "marginpct": 99.0, "pph": 22.72, "filcost": 0.09, "pph_calc": 22.71}, {"cat": "Hueforge Large", "name": "Mewtwo", "min": 323.0, "grams": 90.2, "price": 18.0, "cost": 1.03, "margin": 16.97, "marginpct": 94.0, "pph": 3.16, "filcost": 1.04, "pph_calc": 3.15}, {"cat": "Hueforge Large", "name": "Gyarados", "min": 486.0, "grams": 121.6, "price": 18.0, "cost": 1.41, "margin": 16.59, "marginpct": 92.0, "pph": 2.05, "filcost": 1.4, "pph_calc": 2.05}, {"cat": "Hueforge Large", "name": "Blastoise", "min": null, "grams": null, "price": 18.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Hueforge Large", "name": "Charizard", "min": 652.0, "grams": 129.3, "price": 18.0, "cost": 1.55, "margin": 16.45, "marginpct": 91.0, "pph": 1.51, "filcost": 1.49, "pph_calc": 1.51}, {"cat": "Hueforge Small", "name": "Choose your starter", "min": 132.0, "grams": 52.9, "price": 8.0, "cost": 0.58, "margin": 7.42, "marginpct": 93.0, "pph": 3.37, "filcost": 0.61, "pph_calc": 3.37}, {"cat": "Hueforge Small", "name": "Mew Encounter", "min": 20.0, "grams": 8.4, "price": 8.0, "cost": 0.09, "margin": 7.91, "marginpct": 99.0, "pph": 23.38, "filcost": 0.1, "pph_calc": 23.73}, {"cat": "Hueforge Small", "name": "Mewtwo Encounter", "min": 25.0, "grams": 11.9, "price": 8.0, "cost": 0.13, "margin": 7.87, "marginpct": 98.0, "pph": 18.8, "filcost": 0.14, "pph_calc": 18.89}, {"cat": "Hueforge Small", "name": "Gengar Encounter", "min": 168.0, "grams": 52.0, "price": 8.0, "cost": 0.59, "margin": 7.41, "marginpct": 93.0, "pph": 2.65, "filcost": 0.6, "pph_calc": 2.65}, {"cat": "Hueforge Small", "name": "Charizard Encounter", "min": 23.0, "grams": 8.6, "price": 8.0, "cost": 0.1, "margin": 7.9, "marginpct": 99.0, "pph": 20.36, "filcost": 0.1, "pph_calc": 20.61}, {"cat": "Hueforge Bookmarks", "name": "Dune Bookmark", "min": 55.0, "grams": 12.5, "price": 4.0, "cost": 0.15, "margin": 3.85, "marginpct": 96.0, "pph": 4.2, "filcost": 0.14, "pph_calc": 4.2}, {"cat": "Keyrings - Mini Pokescene", "name": "Gengar", "min": 21.0, "grams": 8.7, "price": 3.0, "cost": 0.1, "margin": 2.9, "marginpct": 97.0, "pph": 8.19, "filcost": 0.1, "pph_calc": 8.29}, {"cat": "Keyrings - Mini Pokescene", "name": "Mewtwo", "min": 25.0, "grams": 11.9, "price": 3.0, "cost": 0.13, "margin": 2.87, "marginpct": 96.0, "pph": 6.96, "filcost": 0.14, "pph_calc": 6.89}, {"cat": "Keyrings - Mini Pokescene", "name": "Charizard", "min": 23.0, "grams": 8.6, "price": 3.0, "cost": 0.1, "margin": 2.9, "marginpct": 97.0, "pph": 7.48, "filcost": 0.1, "pph_calc": 7.57}, {"cat": "Zou Minis", "name": "Mini Shark", "min": 44.0, "grams": 17.8, "price": 1.67, "cost": 0.2, "margin": 1.47, "marginpct": 88.0, "pph": 1.99, "filcost": 0.2, "pph_calc": 2.0}, {"cat": "Zou Minis", "name": "Mini Seal", "min": 17.0, "grams": 7.3, "price": 1.67, "cost": 0.08, "margin": 1.59, "marginpct": 95.0, "pph": 5.73, "filcost": 0.08, "pph_calc": 5.61}, {"cat": "Zou Minis", "name": "Mini Rex", "min": null, "grams": null, "price": 1.67, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Zou Minis", "name": "Mini Bronto", "min": 32.0, "grams": 14.9, "price": 1.67, "cost": 0.16, "margin": 1.51, "marginpct": 90.0, "pph": 2.83, "filcost": 0.17, "pph_calc": 2.83}, {"cat": "Keyrings - Other", "name": "Tadlings", "min": 59.0, "grams": 16.3, "price": 3.0, "cost": 0.19, "margin": 2.81, "marginpct": 94.0, "pph": 2.88, "filcost": 0.19, "pph_calc": 2.86}, {"cat": "Keyrings - Other", "name": "Labubu", "min": null, "grams": null, "price": 3.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Keyrings - Other", "name": "Harry Potter", "min": null, "grams": null, "price": 3.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Keyrings - Other", "name": "Minecraft", "min": null, "grams": null, "price": 3.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Keyrings - Other", "name": "One Piece", "min": null, "grams": null, "price": 3.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Decor", "name": "Moon Lamp", "min": 561.0, "grams": 127.8, "price": 25.0, "cost": 4.12, "margin": 20.88, "marginpct": 84.0, "pph": 2.23, "filcost": 1.47, "pph_calc": 2.23}, {"cat": "Decor", "name": "Skull Statue", "min": null, "grams": null, "price": 20.0, "cost": null, "margin": null, "marginpct": null, "pph": null, "filcost": null, "pph_calc": null}, {"cat": "Decor", "name": "Giant Pokeball selection", "min": 143.0, "grams": 55.0, "price": 70.0, "cost": 0.6, "margin": 69.4, "marginpct": 99.0, "pph": 29.12, "filcost": 0.63, "pph_calc": 29.12}];
+
+const XMAS_TARGETS=[{"name": "Charizard ball", "have": 16, "target": 25, "print": 9, "note": "slow print, ~7.5h each"}, {"name": "Gastly ball", "have": 8, "target": 25, "print": 17, "note": ""}, {"name": "Haunter ball", "have": 5, "target": 25, "print": 20, "note": ""}, {"name": "Gengar ball", "have": 7, "target": 25, "print": 18, "note": ""}, {"name": "Eevee ball", "have": 0, "target": 8, "print": 8, "note": "bundle only — NEEDS FILE (Ben)"}, {"name": "Glaceon ball", "have": 0, "target": 8, "print": 8, "note": "bundle — NEEDS FILE (James)"}, {"name": "Leafeon ball", "have": 0, "target": 8, "print": 8, "note": "bundle — PARTIAL FILES"}, {"name": "Sylveon ball", "have": 0, "target": 8, "print": 8, "note": "bundle — NEEDS FILE (James)"}];
+const PRINTERS=["P1S #1","P1S #2","P1S #3","P1S #4","X1C #5","X1C #6","A1 #7","A1 mini #8"];
+
+const FIL_CATALOG=[{"name": "Charcoal Black", "series": "PLA Matte", "hex": "#28272b"}, {"name": "Ivory White", "series": "PLA Matte", "hex": "#c7c5c1"}, {"name": "Desert Tan", "series": "PLA Matte", "hex": "#b0a185"}, {"name": "Lemon Yellow", "series": "PLA Matte", "hex": "#ecc664"}, {"name": "Lilac Purple", "series": "PLA Matte", "hex": "#8274b0"}, {"name": "Marine Blue", "series": "PLA Matte", "hex": "#24699f"}, {"name": "Scarlet Red", "series": "PLA Matte", "hex": "#be413f"}, {"name": "Sakura Pink", "series": "PLA Matte", "hex": "#dda4ba"}, {"name": "Ice Blue", "series": "PLA Matte", "hex": "#9edbe8"}, {"name": "Mandarin Orange", "series": "PLA Matte", "hex": "#ea8c51"}, {"name": "Ash Gray", "series": "PLA Matte", "hex": "#757c85"}, {"name": "Sky Blue", "series": "PLA Matte", "hex": "#88cae9"}, {"name": "Dark Gray", "series": "PLA Basic", "hex": "#5c5e60"}, {"name": "Sunflower Yellow", "series": "PLA Basic", "hex": "#f9cf36"}, {"name": "Caramel", "series": "PLA Matte", "hex": "#c29c7c"}, {"name": "Grass Green", "series": "PLA Matte", "hex": "#4b9b68"}, {"name": "Dark Brown", "series": "PLA Matte", "hex": "#64534b"}, {"name": "Light Gray", "series": "PLA Basic", "hex": "#c5c5c5"}, {"name": "Blue Grey", "series": "PLA Basic", "hex": "#5b6370"}, {"name": "Latte Brown", "series": "PLA Matte", "hex": "#9c8471"}, {"name": "Dark Blue", "series": "PLA Matte", "hex": "#2a3855"}, {"name": "Beige", "series": "PLA Basic", "hex": "#ebdfd8"}, {"name": "Dark Red", "series": "PLA Matte", "hex": "#9c383c"}, {"name": "Indigo Purple", "series": "PLA Basic", "hex": "#403153"}, {"name": "Turquoise", "series": "PLA Basic", "hex": "#35d2df"}, {"name": "Bone White", "series": "PLA Matte", "hex": "#e4dfd4"}, {"name": "Apple Green", "series": "PLA Matte", "hex": "#cde28c"}, {"name": "Purple", "series": "PLA Basic", "hex": "#7d62b7"}, {"name": "Bambu Green", "series": "PLA Basic", "hex": "#0cb759"}, {"name": "Terracotta", "series": "PLA Matte", "hex": "#b66a4a"}, {"name": "Orange", "series": "PLA Basic", "hex": "#f47a36"}, {"name": "Cyan", "series": "PLA Basic", "hex": "#1c91e3"}, {"name": "Mistletoe Green", "series": "PLA Basic", "hex": "#228260"}, {"name": "Pumpkin Orange", "series": "PLA Basic", "hex": "#f48622"}, {"name": "Nardo Gray", "series": "PLA Matte", "hex": "#7a797b"}, {"name": "Red", "series": "PLA Basic", "hex": "#d93f3a"}, {"name": "Gold", "series": "PLA Basic", "hex": "#d2913b"}, {"name": "Dark Green", "series": "PLA Matte", "hex": "#4d5939"}, {"name": "Silver", "series": "PLA Basic", "hex": "#aeb1b0"}, {"name": "Pink", "series": "PLA Basic", "hex": "#f37f90"}, {"name": "Magenta", "series": "PLA Basic", "hex": "#d846ab"}, {"name": "Yellow", "series": "PLA Basic", "hex": "#f3d938"}, {"name": "Hot Pink", "series": "PLA Basic", "hex": "#f26686"}, {"name": "Brown", "series": "PLA Basic", "hex": "#89422f"}, {"name": "Cocoa Brown", "series": "PLA Basic", "hex": "#684e41"}, {"name": "Ocean to Meadow Gradient", "series": "PLA Basic Gradient", "hex": "#4a90a4"}, {"name": "Blue", "series": "PLA Basic", "hex": "#2144a0"}, {"name": "Plum", "series": "PLA Matte", "hex": "#a43965"}, {"name": "Dark Chocolate", "series": "PLA Matte", "hex": "#524641"}, {"name": "Cobalt Blue", "series": "PLA Basic", "hex": "#2e76ca"}];
+const FIL_EXTRA=[{"name": "Silk Silver", "series": "PLA Silk", "hex": "#c9ccd4", "min": 0.4}, {"name": "Basic Green", "series": "PLA Basic", "hex": "#3f9e3f", "min": 0.3}, {"name": "Translucent Orange", "series": "PETG", "hex": "#f08c2e", "min": 0.3}, {"name": "Translucent Pink", "series": "PETG", "hex": "#e87aa8", "min": 0.3}, {"name": "Translucent Blue", "series": "PETG", "hex": "#4d7ed9", "min": 0.3}];
+
+async function filSeedOnce(){
+  const existing=Object.entries(state.filament||{});
+  // migrate if empty OR only stale pre-table rows (no `name`/`kg` fields)
+  const stale=existing.length>0 && existing.every(([,f])=>f.name==null);
+  if(db && (!existing.length || stale)){
+    const rec={};
+    FIL_SEED.forEach(s=>rec[s.name.replace(/[^\w ]/g,'')]=s);
+    await db.ref('ops/filament').set(rec);
+  }
+}
+
+const POKEBALL_MAP={"Dark Blue": ["Bulbasaur Ball", "Charizard Ball", "Charizard Mega X Ball", "Cyndaquil Ball", "Dialga Ball", "Dragapult Ball", "Espeon Ball", "Flareon Ball", "Garchomp Ball", "Infernape Ball", "Lugia Ball", "Machamp Ball", "Machoke Ball", "Mr Mime Ball", "Nidorina Ball", "Oshawott Ball", "Snorlax Ball", "Tauros Ball", "Vaporeon Ball", "Wooper Ball"], "Desert Tan": ["Alakazam Ball", "Arcanine Ball", "Bidoof Ball", "Blastoise Ball", "Blastoise Mega Ball", "Blaziken Ball", "Caterpie Ball", "Charizard Ball", "Charmander Ball", "Charmeleon Ball", "Cubone Ball", "Cyndaquil Ball", "Dragapult Ball", "Dragonite Ball", "Eevee Ball", "Entei Ball", "Fearow Ball", "Flareon Ball", "Furret Ball", "Golduck Ball", "Greninja Ball", "Growlithe Ball", "Gyarados Ball", "Horsea Ball", "Kakuna Ball", "Kangaskhan Ball", "Koffing Ball", "Lapras Ball", "Leafeon Ball", "Lucario Ball", "Lucario Mega Ball", "Machamp Ball", "Magmar Ball", "Mankey Ball", "Marowak Ball", "Meowth Ball", "Milotic Ball", "Mimikyu Disguised Ball", "Nidoqueen Ball", "Ninetales Ball", "Oshawott Ball", "Persian Ball", "Pidgeot Ball", "Pidgeotto Ball", "Pidgey Ball", "Primeape Ball", "Psyduck Ball", "Raichu Ball", "Raticate Ball", "Rattata Ball", "Sandshrew Ball", "Sandslash Ball", "Seadra Ball", "Slowbro Ball", "Slowpoke Ball", "Snorlax Ball", "Spearow Ball", "Squirtle Ball", "Totodile Ball", "Vaporeon Ball", "Venonat Ball", "Wartortle Ball"], "Turquoise": ["Charizard Ball", "Deoxys Normal Ball", "Dragapult Ball", "Dragonite Ball", "Glaceon Ball", "Gyarados Ball", "Jirachi Ball", "Lucario Ball", "Nidoking Ball", "Nidoran F Ball", "Nidoran M Ball", "Nidorino Ball", "Oshawott Ball", "Porygon Ball", "Salamence Ball", "Suicune Ball", "Totodile Ball", "Trubbish Ball", "Zekrom Ball", "Zoroark Ball"], "Cyan": ["Articuno Ball", "Dragonair Ball", "Dratini Ball", "Riolu Ball"], "Lemon Yellow": ["Abra Ball", "Alakazam Ball", "Arbok Ball", "Beedrill Ball", "Bellsprout Ball", "Blaziken Ball", "Bulbasaur Ball", "Ekans Ball", "Electabuzz Ball", "Electivire Ball", "Elekid Ball", "Exeggutor Ball", "Gengar Mega Ball", "Ho Oh Ball", "Hypno Ball", "Jirachi Ball", "Jolteon Ball", "Kadabra Ball", "Machamp Ball", "Machoke Ball", "Magikarp Ball", "Magmar Ball", "Moltres Ball", "Paras Ball", "Pichu Ball", "Pidgeot Ball", "Pikachu Ball", "Raikou Ball", "Riolu Ball", "Sandshrew Ball", "Sandslash Ball", "Staryu Ball", "Umbreon Ball", "Victreebel Ball", "Weepinbell Ball", "Zeraora Ball"], "Dark Red": ["Aerodactyl Ball", "Bidoof Ball", "Charizard Ball", "Charmeleon Ball", "Groudon Ball", "Infernape Ball", "Machamp Ball", "Machoke Ball", "Persian Ball", "Pidgeot Ball", "Vulpix Ball", "Zoroark Ball", "Zorua Ball"], "Sunflower Yellow": ["Charizard Ball", "Charmander Ball", "Charmeleon Ball", "Cyndaquil Ball", "Dragonite Ball", "Drowzee Ball", "Entei Ball", "Exeggcute Ball", "Garchomp Ball", "Giratina Altered Ball", "Ho Oh Ball", "Infernape Ball", "Luxray Ball", "Parasect Ball", "Piplup Ball", "Psyduck Ball", "Raichu Ball", "Rayquaza Ball", "Reshiram Ball", "Scizor Ball", "Starmie Ball", "Venusaur Ball", "Zapdos Ball", "Zeraora Ball"], "Terracotta": ["Charizard Ball", "Entei Ball", "Gloom Ball", "Houndoom Ball", "Houndour Ball", "Infernape Ball", "Mimikyu Disguised Ball", "Vulpix Ball"], "Dark Gray": ["Arceus Ball", "Blastoise Mega Ball", "Bulbasaur Ball", "Charizard Mega X Ball", "Diglett Ball", "Dugtrio Ball", "Greninja Ball", "Kangaskhan Ball", "Lucario Ball", "Magnemite Ball", "Magneton Ball", "Palkia Ball", "Raikou Ball", "Scizor Ball", "Tyranitar Ball", "Zekrom Ball", "Zeraora Ball", "Zoroark Ball", "Zorua Ball"], "Mandarin Orange": ["Arcanine Ball", "Bulbasaur Ball", "Charizard Ball", "Charmander Ball", "Charmeleon Ball", "Dragonite Ball", "Flareon Ball", "Growlithe Ball", "Kingler Ball", "Krabby Ball", "Magikarp Ball", "Moltres Ball", "Paras Ball", "Parasect Ball", "Raichu Ball", "Rayquaza Ball", "Zapdos Ball", "Zeraora Ball"], "Sky Blue": ["Articuno Ball", "Ceruledge Ball", "Chandelure Ball", "Charizard Mega X Ball", "Glaceon Ball", "Greninja Ball", "Horsea Ball", "Lapras Ball", "Milotic Ball", "Mudkip Ball", "Nidoran M Ball", "Seadra Ball", "Suicune Ball", "Tentacool Ball", "Venusaur Ball", "Wooper Ball", "Zeraora Ball"], "Light Gray": ["Annihilape Ball", "Blastoise Mega Ball", "Diglett Ball", "Dugtrio Ball", "Entei Ball", "Giratina Altered Ball", "Lucario Ball", "Magnemite Ball", "Magneton Ball", "Metagross Ball", "Mewtwo Ball", "Palkia Ball", "Reshiram Ball"], "Marine Blue": ["Articuno Ball", "Blastoise Ball", "Blastoise Mega Ball", "Celebi Ball", "Golbat Ball", "Golduck Ball", "Greninja Ball", "Gyarados Ball", "Ivysaur Ball", "Kyogre Ball", "Lapras Ball", "Latias Ball", "Latios Ball", "Lucario Ball", "Lucario Mega Ball", "Lugia Ball", "Magnemite Ball", "Magneton Ball", "Nidoking Ball", "Nidoran F Ball", "Nidorina Ball", "Piplup Ball", "Poliwag Ball", "Poliwhirl Ball", "Poliwrath Ball", "Sylveon Ball", "Tangela Ball", "Togepi Ball", "Wartortle Ball", "Zubat Ball"], "Scarlet Red": ["Arbok Ball", "Blaziken Ball", "Bulbasaur Ball", "Caterpie Ball", "Charizard Ball", "Charmander Ball", "Darkrai Ball", "Electivire Ball", "Electrode Ball", "Entei Ball", "Espeon Ball", "Fearow Ball", "Garchomp Ball", "Gengar Ball", "Gengar Mega Ball", "Giratina Altered Ball", "Golduck Ball", "Greninja Ball", "Ho Oh Ball", "Kyogre Ball", "Latias Ball", "Latios Ball", "Lucario Mega Ball", "Magmar Ball", "Magnemite Ball", "Magneton Ball", "Moltres Ball", "Paras Ball", "Parasect Ball", "Pichu Ball", "Pidgeotto Ball", "Pikachu Ball", "Raichu Ball", "Rayquaza Ball", "Reshiram Ball", "Salamence Ball", "Scizor Ball", "Spearow Ball", "Starmie Ball", "Tangela Ball", "Togepi Ball", "Totodile Ball", "Voltorb Ball"], "Pumpkin Orange": ["Charizard Ball", "Goldeen Ball", "Mudkip Ball"], "Sakura Pink": ["Abra Ball", "Aerodactyl Ball", "Bellsprout Ball", "Bulbasaur Ball", "Ceruledge Ball", "Chansey Ball", "Charizard Ball", "Charizard Mega X Ball", "Clefable Ball", "Clefairy Ball", "Diglett Ball", "Dugtrio Ball", "Espeon Ball", "Exeggutor Ball", "Fearow Ball", "Gengar Ball", "Gloom Ball", "Golduck Ball", "Greninja Ball", "Gyarados Ball", "Ho Oh Ball", "Houndoom Ball", "Jigglypuff Ball", "Kadabra Ball", "Magikarp Ball", "Mew Ball", "Moltres Ball", "Palkia Ball", "Pidgeot Ball", "Pidgeotto Ball", "Pidgey Ball", "Pikachu Ball", "Poliwag Ball", "Ponyta Ball", "Primeape Ball", "Raticate Ball", "Rattata Ball", "Shellder Ball", "Slowbro Ball", "Slowpoke Ball", "Spearow Ball", "Sylveon Ball", "Tinkaton Ball", "Venomoth Ball", "Victreebel Ball", "Weedle Ball", "Weepinbell Ball", "Wigglytuff Ball"], "Ash Gray": ["Aerodactyl Ball", "Alakazam Ball", "Annihilape Ball", "Blastoise Ball", "Cloyster Ball", "Dugtrio Ball", "Geodude Ball", "Graveler Ball", "Hypno Ball", "Jigglypuff Ball", "Kadabra Ball", "Lapras Ball", "Machamp Ball", "Machoke Ball", "Machop Ball", "Onix Ball", "Slowbro Ball", "Tauros Ball", "Tentacool Ball", "Torterra Ball"], "Dark Brown": ["Abra Ball", "Alakazam Ball", "Bellsprout Ball", "Bidoof Ball", "Blastoise Ball", "Blastoise Mega Ball", "Clefable Ball", "Drowzee Ball", "Eevee Ball", "Furret Ball", "Gloom Ball", "Growlithe Ball", "Hypno Ball", "Kadabra Ball", "Leafeon Ball", "Meowth Ball", "Mimikyu Disguised Ball", "Nidoqueen Ball", "Pikachu Ball", "Pinsir Ball", "Raichu Ball", "Sandslash Ball", "Tauros Ball", "Venusaur Ball", "Victreebel Ball", "Vulpix Ball", "Wartortle Ball", "Weepinbell Ball"], "Dark Chocolate": ["Blastoise Ball", "Houndoom Ball", "Nidoqueen Ball"], "Ice Blue": ["Articuno Ball", "Bulbasaur Ball", "Butterfree Ball", "Ceruledge Ball", "Chandelure Ball", "Charizard Mega X Ball", "Dialga Ball", "Dragapult Ball", "Glaceon Ball", "Greninja Ball", "Ivysaur Ball", "Luxray Ball", "Machamp Ball", "Machop Ball", "Mudkip Ball", "Nidoran F Ball", "Nidoran M Ball", "Nidorina Ball", "Piplup Ball", "Ponyta Ball", "Raikou Ball", "Squirtle Ball", "Sylveon Ball", "Vaporeon Ball", "Venusaur Ball"], "Magenta": ["Ivysaur Ball", "Venonat Ball", "Venusaur Ball"], "Mistletoe Green": ["Bulbasaur Ball", "Torterra Ball", "Venusaur Ball"], "Pink": ["Chansey Ball", "Dragapult Ball", "Mr Mime Ball", "Tinkaton Ball", "Trubbish Ball", "Venusaur Ball"], "Caramel": ["Bidoof Ball", "Diglett Ball", "Dugtrio Ball", "Eevee Ball", "Fearow Ball", "Golem Ball", "Ivysaur Ball", "Kangaskhan Ball", "Mankey Ball", "Marowak Ball", "Primeape Ball", "Staryu Ball", "Tauros Ball", "Torterra Ball"], "Cocoa Brown": ["Pidgey Ball", "Torterra Ball"], "Beige": ["Clefable Ball", "Exeggcute Ball", "Kingler Ball", "Krabby Ball", "Mankey Ball", "Mr Mime Ball", "Tinkaton Ball", "Togepi Ball"], "Blue Grey": ["Absol Ball", "Annihilape Ball", "Gloom Ball", "Machoke Ball", "Metagross Ball", "Nidoqueen Ball", "Oddish Ball", "Slowbro Ball", "Vileplume Ball"], "Hot Pink": ["Annihilape Ball", "Bulbasaur Ball", "Gardevoir Ball", "Milotic Ball", "Porygon Ball", "Staryu Ball"], "Bambu Green": ["Arceus Ball", "Bulbasaur Ball", "Oddish Ball", "Rayquaza Ball"], "Bone White": ["Cubone Ball", "Gloom Ball", "Goldeen Ball", "Golem Ball", "Groudon Ball", "Houndoom Ball", "Houndour Ball", "Marowak Ball", "Nidoking Ball", "Paras Ball", "Pinsir Ball", "Raikou Ball", "Salamence Ball", "Seaking Ball", "Tinkaton Ball", "Venomoth Ball", "Vulpix Ball"], "Nardo Gray": ["Articuno Ball", "Diglett Ball", "Dugtrio Ball", "Golem Ball"], "Indigo Purple": ["Ceruledge Ball", "Cloyster Ball", "Gengar Mega Ball", "Grimer Ball", "Jolteon Ball", "Muk Ball", "Nidoran M Ball", "Nidorino Ball", "Ponyta Ball", "Tinkaton Ball"], "Lilac Purple": ["Aerodactyl Ball", "Arbok Ball", "Butterfree Ball", "Cloyster Ball", "Deoxys Normal Ball", "Ditto Ball", "Ekans Ball", "Gastly Ball", "Gloom Ball", "Golbat Ball", "Grimer Ball", "Haunter Ball", "Kangaskhan Ball", "Mewtwo Ball", "Muk Ball", "Nidoking Ball", "Nidoran M Ball", "Nidorino Ball", "Palkia Ball", "Raikou Ball", "Rattata Ball", "Shellder Ball", "Starmie Ball", "Suicune Ball", "Tinkaton Ball", "Venomoth Ball", "Venonat Ball", "Weezing Ball", "Wooper Ball", "Zubat Ball"], "Orange": ["Cyndaquil Ball", "Deoxys Normal Ball", "Goldeen Ball", "Seaking Ball", "Vileplume Ball"], "Red": ["Tentacool Ball", "Vileplume Ball"], "Apple Green": ["Celebi Ball", "Chikorita Ball", "Dragapult Ball", "Scyther Ball", "Sprigatito Ball", "Tyranitar Ball"], "Grass Green": ["Bellsprout Ball", "Bulbasaur Ball", "Caterpie Ball", "Celebi Ball", "Chikorita Ball", "Exeggutor Ball", "Gardevoir Ball", "Ho Oh Ball", "Ivysaur Ball", "Jigglypuff Ball", "Leafeon Ball", "Metapod Ball", "Scyther Ball", "Sprigatito Ball", "Victreebel Ball", "Weepinbell Ball"], "Dark Green": ["Bulbasaur Ball", "Dragapult Ball", "Trubbish Ball", "Victreebel Ball", "Weepinbell Ball"], "Purple": ["Chandelure Ball", "Gengar Ball", "Koffing Ball"], "Latte Brown": ["Cubone Ball", "Exeggutor Ball", "Ninetales Ball", "Pidgeot Ball", "Pidgeotto Ball", "Raticate Ball", "Snorlax Ball", "Trubbish Ball", "Vileplume Ball", "Weedle Ball"], "Silver": ["Magnemite Ball", "Magneton Ball"], "Plum": ["Gengar Mega Ball"], "Cobalt Blue": ["Charizard Mega X Ball"], "Gold": ["Arceus Ball", "Meowth Ball"], "Brown": ["Clefairy Ball", "Spearow Ball", "Squirtle Ball"], "Blue": ["Dragonair Ball"], "Yellow": ["Kakuna Ball"]};
+const PB_ALIAS={'Basic Green':'Bambu Green'};
+const pbFor=name=>POKEBALL_MAP[PB_ALIAS[name]||name]||null;
+function tabHead(num,title,sub){return `<div class="tabhead"><span class="n">${num}</span><h2>${title}</h2><span class="sub">${sub}</span></div>`;}
+function renderFilament(){
+  const fget=(k,d)=>{try{return localStorage.getItem(k)||d}catch{return d}};
+  const curOwner=fget('fil_owner','all'), curSeries=fget('fil_series','all'), curStatus=fget('fil_status','all');
+  const hideEmpty=fget('fil_hideEmpty','1')==='1';
+  const key=n=>String(n).replace(/[^\w ]/g,'');
+  const liveBy={};
+  Object.entries(state.filament||{}).forEach(([id,f])=>liveBy[id]=f);
+  const resolve=m=>{
+    const f=liveBy[key(m.name)]||{};
+    return {name:m.name, type:f.type||m.series, sw:f.sw||m.hex||'#888',
+      kg:f.kg!=null?+f.kg:0, spools:f.spools||0, owner:f.owner||'',
+      min:f.min!=null?+f.min:(m.min!=null?m.min:0.4), note:f.note||m.note||'', id:key(m.name)};
+  };
+  let master=FIL_CATALOG.map(resolve);
+  FIL_EXTRA.forEach(x=>master.push(resolve(x)));
+  // append any live spools not already represented (custom entries)
+  Object.values(liveBy).forEach(f=>{
+    const n=f.name||(f.material?String(f.material)+(f.color?' '+f.color:''):'');
+    if(n&&!master.some(r=>r.name===n))master.push(resolve({name:n,series:f.type||'',hex:f.sw||'#888',min:f.min}));
+  });
+  master.sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  const maxKg=Math.max(...master.map(r=>r.kg),1);
+  const totKg=master.reduce((a,r)=>a+r.kg,0);
+  const outAll=master.filter(r=>r.kg<=0).length;
+  const lowAll=master.filter(r=>r.kg>0&&r.kg<r.min).length;
+  const jK=master.filter(r=>r.owner==='J').reduce((a,r)=>a+r.kg,0);
+  const bK=master.filter(r=>r.owner==='B').reduce((a,r)=>a+r.kg,0);
+  const eur=kg=>'€'+(kg*EUR_PER_KG).toFixed(2);
+  const stat=(k,v,n,cls='')=>`<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  const statusOf=r=>r.kg<=0?'out':r.kg<r.min?'low':'ok';
+  const flag=r=>r.kg<=0?'<span class="flag out">EMPTY</span>':r.kg<r.min?'<span class="flag low">LOW</span>':'<span class="flag ok">OK</span>';
+  const lvlColor=r=>r.kg<r.min?'var(--bad)':r.kg<r.min*2?'var(--warn)':'var(--ok)';
+  const whoBadge=r=>r.owner?`<span class="who ${r.owner}">${WHO_NAME[r.owner]||r.owner}</span>`:'<span class="mut">—</span>';
+  const disp=master.filter(r=>{
+    if(hideEmpty&&r.kg<=0)return false;
+    if(curOwner!=='all'){ if(curOwner==='none'){ if(r.owner)return false; } else if(r.owner!==curOwner)return false; }
+    if(curSeries!=='all'&&r.type!==curSeries)return false;
+    if(curStatus!=='all'&&statusOf(r)!==curStatus)return false;
+    return true;
+  });
+  const seriesOpts=['all',...new Set(master.map(r=>r.type).filter(Boolean))];
+  const moves=Object.entries(state.fmoves||{}).map(([id,m])=>({id,...m})).sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
+  const showMoves=moves.length?moves:FIL_SEED_MOVES.map((m,i)=>({id:'seed'+i,...m}));
+  const stocked=master.filter(r=>r.kg>0);
+  const incKg=FIL_INCOMING.reduce((a,x)=>a+x.kg,0);
+  const incCard=`<div class="stat inc-card"><div class="k">Incoming</div><div class="v">${incKg} kg</div><div class="n">${FIL_INCOMING.length} items · hover for detail</div>
+    <div class="inc-pop">
+      ${FIL_INCOMING.map(x=>`<div class="inc-row">${FIL_RECEIVED.includes(x.name)?'<span class="flag ok" style="margin-right:6px">✓ received</span>':''}<span class="sw" style="background:${x.sw||'#00e5ff'}"></span><b>${esc(x.name)}</b> <span class="muted">${esc(x.type)}</span> · code ${x.code}<div class="inc-note">${esc(x.note)}</div>
+        ${FIL_RECEIVED.includes(x.name)?'':'<button class="btn ghost" style="padding:2px 8px;font-size:11px;margin-top:4px" onclick="filRecv(${JSON.stringify(x.name)})">✔ receive</button>'}</div>`).join('')}
+      <div class="mut" style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">Order placed 03 Sep.
+        <button class="btn ghost" style="padding:3px 10px;font-size:11px" onclick="filRecvAll()">✔ Receive all</button></div>
+    </div></div>`;
+  const lowCard=`<div class="stat low-card"><div class="k">Low</div><div class="v">${lowAll}</div><div class="n">below reorder floor · hover for detail</div>
+    <div class="inc-pop">
+      ${lowAll?master.filter(r=>r.kg>0&&r.kg<r.min).map(r=>`<div class="inc-row"><span class="sw" style="background:${r.sw}"></span><b>${esc(r.name)}</b> <span class="mut">${(+r.kg||0).toFixed(2)}kg / floor ${r.min}kg</span></div>`).join(''):'<div class="muted">Nothing low — shelf looks healthy.</div>'}
+    </div></div>`;
+  const filterBar=`<div class="fil-filters">
+    <select onchange="filFilter('owner',this.value)">
+      <option value="all" ${curOwner==='all'?'selected':''}>Owner: all</option>
+      <option value="J" ${curOwner==='J'?'selected':''}>Jammin</option>
+      <option value="B" ${curOwner==='B'?'selected':''}>James</option>
+      <option value="none" ${curOwner==='none'?'selected':''}>Unstocked</option>
+    </select>
+    <select onchange="filFilter('series',this.value)">${seriesOpts.map(s=>`<option value="${esc(s)}" ${curSeries===s?'selected':''}>${s==='all'?'Series: all':esc(s)}</option>`).join('')}</select>
+    <select onchange="filFilter('status',this.value)">
+      <option value="all" ${curStatus==='all'?'selected':''}>Status: all</option>
+      <option value="ok" ${curStatus==='ok'?'selected':''}>OK</option>
+      <option value="low" ${curStatus==='low'?'selected':''}>Low</option>
+      <option value="out" ${curStatus==='out'?'selected':''}>Empty</option>
+    </select>
+    <label class="fil-hide"><input type="checkbox" ${hideEmpty?'checked':''} onchange="filFilter('hideEmpty',this.checked)"> Hide empty</label>
+    <span class="mut fil-count">${disp.length}/${master.length} colours</span>
+  </div>`;
+  const incBanner=`<div class="fil-banner"><div class="fil-track">
+    ${FIL_INCOMING.map(x=>`<span class="fil-inc"><b>${esc(x.name)}</b> ${esc(x.type)} · code ${x.code} · ${esc(x.note)}</span>`).join('')}
+    ${FIL_INCOMING.map(x=>`<span class="fil-inc"><b>${esc(x.name)}</b> ${esc(x.type)} · code ${x.code} · ${esc(x.note)}</span>`).join('')}
+  </div></div>`;
+  let html=tabHead('01','FILAMENT','inventory & pokeball colours')+filAlerts()+`<div class="stats">
+    ${stat('On shelf',totKg.toFixed(2)+' kg',master.reduce((a,r)=>a+r.spools,0)+' spools')}
+    ${stat('Value on shelf',eur(totKg),'at €'+EUR_PER_KG+'/kg','ok')}
+    ${stat('Empty',outAll,'colours at 0 kg',outAll?'bad':'ok')}
+    ${incCard}
+    ${lowCard}
+    ${stat('Jammin / James',jK.toFixed(1)+' / '+bK.toFixed(1)+' kg','shelf split')}
+  </div>
+  ${filterBar}
+  <div class="tbl-wrap"><table><thead><tr>
+    <th>Colour / Type</th><th>Owner</th><th style="text-align:right">kg on shelf</th><th>Level</th><th style="text-align:right">Spools</th><th>Status</th><th>Notes</th>
+  </tr></thead><tbody>
+  ${disp.map(r=>`<tr>
+    <td class="pbcell" ${(()=>{const pb=pbFor(r.name);return pb?`data-pb="${esc(pb.join('|'))}"`:''})()}>
+      <span class="sw" style="background:${r.sw}"></span><b>${esc(r.name)}</b> <span class="muted">· ${esc(r.type)}</span>
+      ${pbFor(r.name)?`<span class="flag inc pbflag">${pbFor(r.name).length} balls</span>`:''}
+      ${pbFor(r.name)?`<div class="pb-pop">${pbFor(r.name).map(b=>`<div class="pb-row">${esc(b)}</div>`).join('')}</div>`:''}
+    </td>
+    <td>${whoBadge(r)}</td>
+    <td class="num"><b>${(+r.kg||0).toFixed(2)}</b></td>
+    <td><span class="lvbar"><i style="width:${Math.min(100,(r.kg||0)/maxKg*100)}%;background:${lvlColor(r)}"></i></span></td>
+    <td class="num">${r.spools||0}</td>
+    <td>${flag(r)}</td>
+    <td class="muted" style="white-space:normal;max-width:300px">${esc(r.note||'')}</td>
+  </tr>`).join('')}
+  </tbody></table></div>
+  ${incBanner}
+  <div class="grid2">
+    <div class="panel"><h3>Recent movements</h3><div class="log">
+      ${showMoves.slice(0,20).map(m=>`<div class="mv"><span class="when">${esc(m.d||'')}</span><span class="what"><span class="who ${m.who}">${WHO_NAME[m.who]||m.who}</span>${esc(m.what||'')}</span>${m.amt!=null?`<span class="amt ${m.amt<0?'neg':'pos'}">${m.amt>0?'+':''}${m.amt}g</span>`:''}</div>`).join('')||'<div class="muted">No movements logged.</div>'}
+    </div></div>
+    <div class="panel"><h3>Log movement</h3>
+      <div class="form-row"><select id="fm-col">${stocked.map(r=>`<option value="${r.id}">${esc(r.name)} (${(+r.kg||0).toFixed(2)}kg)</option>`).join('')}</select></div>
+      <div class="form-row">
+        <select id="fm-type"><option value="use">Used on print</option><option value="add">Stock take / top-up</option><option value="buy">New purchase</option><option value="xfer">Transferred</option></select>
+        <input type="number" id="fm-g" placeholder="grams" step="10" style="width:90px">
+        <select id="fm-who" style="width:auto"><option value="J">Jammin</option><option value="B">James</option></select>
+        <input type="text" id="fm-note" placeholder="note (job / reason)" style="flex:1;min-width:140px">
+        <button class="btn" onclick="filLog()">Log</button>
+      </div>
+      <div class="muted" style="font-size:11.5px;margin-top:6px">Every movement is stamped with who logged it and when — the audit trail is how two people stay honest about shared stock.</div>
+    </div>
+  </div>`;
+  return html;
+}
+window.filFilter=(k,v)=>{
+  if(k==='hideEmpty'){localStorage.setItem('fil_hideEmpty',v?'1':'0');}
+  else localStorage.setItem('fil_'+k,v);
+  render();
+};
+window.filAdj=id=>{const d=document.getElementById('fm-col');if(d)d.value=id;document.getElementById('fm-g').focus();};
+window.filLog=async()=>{
+  const id=document.getElementById('fm-col').value,type=document.getElementById('fm-type').value;
+  const g=+document.getElementById('fm-g').value||0,who=document.getElementById('fm-who').value;
+  const note=document.getElementById('fm-note').value.trim();
+  if(!g)return alert('grams required, kid.');
+  const cur=+(state.filament[id]&&state.filament[id].kg)||0;
+  const delta=type==='use'?-g:g;
+  const nk=Math.max(0,Math.round((cur+delta/1000)*1000)/1000);
+  const verbs={use:'used on print',add:'stock top-up',buy:'new stock added',xfer:'transferred'};
+  const name=state.filament[id].name;
+  try{
+    await upd('filament/'+id,{kg:nk});
+    await add('fmoves',{d:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),who,
+      what:`${verbs[type]} — ${name}${note?': '+note:''}`,amt:delta,ts:new Date().toISOString()});
+    document.getElementById('fm-g').value='';document.getElementById('fm-note').value='';
+  }catch(e){alert('Save failed: '+e.message);}
+};
+
+/* ---------- jobs ---------- *//* ---------- jobs ---------- */
+function renderJobs(){
+  const rows=Object.entries(state.jobs||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
+  let html=tabHead('02','JOBS','ongoing work')+`<div class="bar">
+    <input id="j-title" placeholder="Job name (e.g. 50x keychains for Gerry)">
+    <select id="j-status"><option>queued</option><option>printing</option><option>done</option><option>on hold</option></select>
+    <button class="btn" onclick="addJob()">+ Log job</button></div>`;
+  if(!rows.length)html+='<div class="empty">No jobs logged.</div>';
+  html+='<div class="cards">'+rows.map(([id,j])=>`
+    <div class="card"><h3>${esc(j.title)}</h3>
+      <div class="meta">${esc(j.created||'')}</div>
+      <div><span class="badge ${j.status==='done'?'b-ok':j.status==='on hold'?'b-bad':j.status==='printing'?'b-info':'b-warn'}">${esc(j.status)}</span></div>
+      <div class="actions">
+        ${j.status!=='done'?`<button onclick="setJob('${id}','printing')">▶ printing</button><button onclick="setJob('${id}','done')">✔ done</button>`:''}
+        ${j.status!=='on hold'?`<button onclick="setJob('${id}','on hold')">⏸ hold</button>`:''}
+        <button class="danger" onclick="del('jobs/${id}')">✕</button></div></div>`).join('')+'</div>';
+  return html;
+}
+window.addJob=()=>{const t=$('j-title').value.trim();if(!t)return;add('jobs',{title:t,status:$('j-status').value,created:today()+' '+new Date().toTimeString().slice(0,5)});$('j-title').value='';};
+window.setJob=(id,s)=>up('jobs/'+id,{status:s});
+
+/* ---------- sliced job assignments ---------- */
+function renderAssign(){
+  const rows=Object.entries(state.assign||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
+  const open=rows.filter(([,a])=>a.status!=='done'),done=rows.filter(([,a])=>a.status==='done');
+  const card=([id,a])=>`<div class="card" style="border-left:3px solid ${a.status==='done'?'var(--ok)':a.status==='printing'?'var(--acc)':'var(--warn)'}">
+    <h3>${esc(a.name)}</h3>
+    <div class="meta">${esc(a.plates)} plate${a.plates==1?'':'s'} · ${esc(a.colour)} · to <b>${esc(a.to||'James')}</b> · ${esc(a.created||'')}</div>
+    <div style="margin-bottom:6px"><span class="badge ${a.status==='done'?'b-ok':a.status==='printing'?'b-info':'b-warn'}">${esc(a.status)}</span>
+      ${a.note?`<span class="mut"> ${esc(a.note)}</span>`:''}</div>
+    ${a.url?`<a class="btn ghost" style="padding:4px 12px;text-decoration:none;display:inline-block" href="${esc(a.url)}" target="_blank">⬇ open file</a>`
+      :a.ref?`<div class="mut">File: ${esc(a.ref)}</div>`:'<div class="mut">No file attached.</div>'}
+    <div class="actions">
+      ${a.status!=='done'?`<button onclick="setA('${id}','printing')">▶ printing</button><button onclick="setA('${id}','done')">✔ done</button>`:''}
+      <button class="danger" onclick="del('assign/${id}')">✕</button>
+    </div></div>`;
+  let html=tabHead('04','SLICED JOBS','file assignments to James')+`<div class="card" style="margin-bottom:14px"><h3>Assign a sliced file</h3>
+    <div class="bar" style="margin-top:10px">
+      <input id="a-name" placeholder="Job name (e.g. dragon-hood v2)">
+      <input id="a-plates" type="number" min="1" value="1" style="max-width:80px" title="Number of plates">
+      <input id="a-colour" placeholder="Colour" style="max-width:120px">
+      <select id="a-to" style="max-width:110px"><option>James</option><option>Jammin</option></select>
+      <input id="a-ref" placeholder="File URL (paste from the Files tab) or farm-server path" style="min-width:220px">
+      <input id="a-note" placeholder="Note (optional)" style="max-width:160px">
+      <button class="btn" onclick="addA()">→ Assign</button>
+    </div>
+    <div class="mut">Tip: upload the file on the <b>Files</b> tab first, copy its link, paste it here. Big files live happily in Firebase Storage now.</div>
+  </div>`;
+  html+='<h3 style="margin:4px 0 10px">Open</h3>'+(open.length?'<div class="cards">'+open.map(card).join('')+'</div>':'<div class="empty">Nothing assigned right now.</div>');
+  if(done.length)html+='<details style="margin-top:14px"><summary style="font-size:14px">Done ('+done.length+')</summary><div class="cards" style="margin-top:10px">'+done.map(card).join('')+'</div></details>';
+  return html;
+}
+window.addA=()=>{
+  const name=$('a-name').value.trim(),plates=Math.max(1,Math.round(+$('a-plates').value||1)),colour=$('a-colour').value.trim()||'any',ref=$('a-ref').value.trim(),note=$('a-note').value.trim(),to=$('a-to').value;
+  if(!name)return alert('Give it a job name, kid.');
+  add('assign',{name,plates,colour,ref,url:/^https?:/.test(ref)?ref:'',note,to,status:'queued',created:today()+' '+new Date().toTimeString().slice(0,5),by:me()});
+  $('a-name').value='';$('a-colour').value='';$('a-ref').value='';$('a-note').value='';};
+window.setA=(id,s)=>up('assign/'+id,{status:s}).catch(e=>alert('Save failed: '+e.message));
+
+/* ---------- files (Firebase Storage) ---------- */
+function renderFiles(){
+  const rows=Object.entries(state.files||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
+  let html=tabHead('05','FILES','shared storage')+`<div class="card" style="margin-bottom:14px"><h3>Upload to shared storage</h3>
+    <div class="bar" style="margin-top:10px">
+      <input type="file" id="u-file" multiple style="flex:2">
+      <button class="btn" onclick="upFiles()">⬆ Upload</button>
+    </div>
+    <div class="mut">Any size — gcode.3mf, STLs, whatever. Copy a link and paste it into a sliced-job assignment.</div>
+    <div id="upprog" class="mut" style="margin-top:8px"></div>
+  </div>`;
+  if(!rows.length)html+='<div class="empty">No files yet.</div>';
+  html+='<div class="cards">'+rows.map(([id,f])=>`
+    <div class="card"><h3 style="font-size:14px">${esc(f.name)}</h3>
+      <div class="meta">${f.size?(f.size/1048576).toFixed(2)+' MB · ':''}${esc(f.created||'')} · ${esc(f.by||'')}</div>
+      <div class="actions">
+        <button onclick="copyLink('${id}')">🔗 copy link</button>
+        <a class="btn ghost" style="padding:6px;text-decoration:none;text-align:center" href="${esc(f.url)}" target="_blank">⬇ open</a>
+        <button class="danger" onclick="delFile('${id}')">✕</button>
+      </div></div>`).join('')+'</div>';
+  return html;
+}
+window.upFiles=async()=>{
+  const files=[...$('u-file').files];if(!files.length)return alert('Pick a file first.');
+  const prog=$('upprog');
+  for(let i=0;i<files.length;i++){
+    const f=files[i];prog.textContent=`Uploading ${f.name} (${i+1}/${files.length})…`;
+    try{
+      const path='files/'+Date.now()+'-'+f.name.replace(/[^\w.\- ]/g,'_');
+      const snap=await storage.ref(path).put(f);
+      const url=await snap.ref.getDownloadURL();
+      await add('files',{name:f.name,size:f.size,path,url,by:me(),created:today()+' '+new Date().toTimeString().slice(0,5)});
+    }catch(e){alert('Upload failed: '+e.message);}
+  }
+  prog.textContent='';$('u-file').value='';
+};
+window.copyLink=id=>{navigator.clipboard.writeText(state.files[id].url).then(()=>alert('Link copied — paste it into a sliced-job assignment.'));};
+window.delFile=id=>{const f=state.files[id];if(!confirm('Delete '+f.name+' from storage?'))return;
+  if(f.path)storage.ref(f.path).delete().catch(()=>{});
+  del('files/'+id);};
+
+/* ---------- products (public catalogue) ---------- */
+function renderProducts(){
+  const rows=Object.entries(state.products||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
+  let html=tabHead('07','PRODUCTS','public catalogue')+`<div class="card" style="margin-bottom:14px"><h3>Add / edit product (shows on the public site)</h3>
+    <div id="prodform" style="margin-top:10px">
+      <div><label>Name</label><input id="p-name" placeholder="Galaxy Dragon Hood"></div>
+      <div><label>Price (£, shown as text — you handle payment)</label><input id="p-price" placeholder="25.00"></div>
+      <div style="grid-column:1/-1"><label>Description</label><textarea id="p-desc" placeholder="What it is, sizes, materials…"></textarea></div>
+      <div><label>Photo (optional)</label><input type="file" id="p-img" accept="image/*"></div>
+      <div><label>&nbsp;</label><button class="btn" onclick="addProd()" id="p-btn">+ Publish product</button></div>
+    </div>
+  </div>`;
+  if(!rows.length)html+='<div class="empty">No products yet — the public site will show an empty catalogue until you add some.</div>';
+  html+='<div class="cards">'+rows.map(([id,p])=>`
+    <div class="card">${p.img?`<img src="${esc(p.img)}" style="width:100%;border-radius:8px;margin-bottom:8px;max-height:160px;object-fit:cover">`:''}
+      <h3>${esc(p.name)}</h3>
+      <div class="meta">${p.price?'£'+esc(p.price):''} · ${p.hidden?'<span class="badge b-bad">hidden</span>':'<span class="badge b-ok">live on site</span>'}</div>
+      <div class="mut" style="margin-bottom:6px">${esc(p.desc||'')}</div>
+      <div class="actions">
+        <button onclick="toggleProd('${id}')">${p.hidden?'show':'hide'}</button>
+        <button class="danger" onclick="delProd('${id}')">✕</button>
+      </div></div>`).join('')+'</div>';
+  return html;
+}
+window.addProd=async()=>{
+  const name=$('p-name').value.trim(),price=$('p-price').value.trim(),desc=$('p-desc').value.trim();
+  if(!name)return alert('Product needs a name, kid.');
+  const btn=$('p-btn');btn.textContent='Saving…';btn.disabled=true;
+  let img='';
+  const fileEl=$('p-img'),file=fileEl&&fileEl.files&&fileEl.files[0];
+  try{
+    if(file){const snap=await storage.ref('products/'+Date.now()+'-'+file.name.replace(/[^\w.\- ]/g,'_')).put(file);img=await snap.ref.getDownloadURL();}
+    await add('products',{name,price,desc,img,hidden:false,created:today()+' '+new Date().toTimeString().slice(0,5)});
+    $('p-name').value='';$('p-price').value='';$('p-desc').value='';fileEl.value='';
+  }catch(e){alert('Save failed: '+e.message);}
+  btn.textContent='+ Publish product';btn.disabled=false;
+};
+window.toggleProd=id=>up('products/'+id+'/hidden',!state.products[id].hidden);
+window.delProd=id=>{if(confirm('Remove this product from the public site?'))del('products/'+id);};
+
+/* ---------- orders ---------- */
+function renderOrders(){
+  const rows=Object.entries(state.orders||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
+  let html=tabHead('08','ORDERS','incoming stock & deliveries')+`<div class="bar">
+    <input id="o-what" placeholder="Item (e.g. 4× Bambu PLA Galaxy Black)">
+    <input id="o-eta" type="date" value="${today()}" style="max-width:150px">
+    <select id="o-status"><option>incoming</option><option>shipped</option><option>delivered</option><option>cancelled</option></select>
+    <button class="btn" onclick="addOrder()">+ Log order</button></div>`;
+  if(!rows.length)html+='<div class="empty">No orders/deliveries tracked.</div>';
+  html+=rows.map(([id,o])=>`
+    <div class="note"><b>${esc(o.what)}</b>
+      <div class="meta"><span><span class="badge ${o.status==='delivered'?'b-ok':o.status==='cancelled'?'b-bad':o.status==='incoming'?'b-warn':'b-info'}">${esc(o.status)}</span> ETA ${esc(o.eta||'—')}</span>
+      <span>${o.status!=='delivered'?`<button class="btn ghost" style="padding:3px 10px" onclick="setOrder('${id}','delivered')">mark delivered</button> `:''}<button class="btn ghost" style="padding:3px 10px" onclick="del('orders/${id}')">✕</button></span></div>
+    </div>`).join('');
+  return html;
+}
+window.addOrder=()=>{const w=$('o-what').value.trim();if(!w)return;add('orders',{what:w,eta:$('o-eta').value,status:$('o-status').value,created:today()});$('o-what').value='';};
+window.setOrder=(id,s)=>up('orders/'+id,{status:s});
+
+/* ---------- notes ---------- */
+function renderNotes(){
+  const rows=Object.entries(state.notes||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
+  let html=tabHead('09','NOTES','shared scratchpad')+`<div class="bar">
+    <input id="n-text" placeholder="Shared note…" onkeydown="if(event.key==='Enter')addNote()">
+    <button class="btn" onclick="addNote()">+ Note</button></div>`;
+  if(!rows.length)html+='<div class="empty">No notes yet.</div>';
+  html+=rows.map(([id,n])=>`<div class="note">${esc(n.text)}<div class="meta"><span>${esc(n.who)}</span><span>${esc(n.created||'')} <button class="btn ghost" style="padding:2px 8px" onclick="del('notes/${id}')">✕</button></span></div></div>`).join('');
+  return html;
+}
+window.addNote=()=>{const t=$('n-text').value.trim();if(!t)return;add('notes',{text:t,who:me(),created:today()+' '+new Date().toTimeString().slice(0,5)});$('n-text').value='';};
+
+
+/* ---------- product stock (seeded from Gerry's 2026-08-30 stock take) ---------- */
+const STOCK_SEED=[{"name": "Pokémon", "price": 16.0, "items": [{"name": "Pikachu", "qty": 27, "price": 16.0}, {"name": "Raichu", "qty": 14, "price": 16.0}, {"name": "Bulbasaur", "qty": 48, "price": 16.0}, {"name": "Charmander", "qty": 20, "price": 16.0}, {"name": "Squirtle", "qty": 25, "price": 16.0}, {"name": "Charmeleon", "qty": 15, "price": 16.0}, {"name": "Charizard", "qty": 16, "price": 16.0}, {"name": "Mew", "qty": 53, "price": 16.0}, {"name": "Mew (blue)", "qty": 5, "price": 16.0}, {"name": "Mewtwo", "qty": 19, "price": 16.0}, {"name": "Gastly", "qty": 8, "price": 16.0}, {"name": "Haunter", "qty": 5, "price": 16.0}, {"name": "Gengar", "qty": 7, "price": 16.0}, {"name": "Electabuzz", "qty": 7, "price": 16.0}, {"name": "Dragonite", "qty": 17, "price": 16.0}, {"name": "Magmar", "qty": 11, "price": 16.0}, {"name": "Vulpix", "qty": 8, "price": 16.0}, {"name": "Snorlax", "qty": 30, "price": 16.0}, {"name": "Poliwag", "qty": 4, "price": 16.0}, {"name": "Togepi", "qty": 34, "price": 16.0}, {"name": "Darkrai", "qty": 8, "price": 16.0}, {"name": "Weezing", "qty": 7, "price": 16.0}, {"name": "Cyndaquil", "qty": 35, "price": 16.0}, {"name": "Typhlosion", "qty": 8, "price": 16.0}, {"name": "Jolteon", "qty": 15, "price": 16.0}, {"name": "Flareon", "qty": 24, "price": 16.0}, {"name": "Vaporeon", "qty": 15, "price": 16.0}, {"name": "Umbreon", "qty": 28, "price": 16.0}, {"name": "Espeon", "qty": 27, "price": 16.0}, {"name": "Ekans", "qty": 4, "price": 16.0}, {"name": "Zubat", "qty": 5, "price": 16.0}, {"name": "Starmie", "qty": 5, "price": 16.0}, {"name": "Rhydon", "qty": 4, "price": 16.0}, {"name": "Bellsprout", "qty": 5, "price": 16.0}], "qty": 563, "value": 9008.0}, {"name": "Pokéballs", "price": 12.0, "items": [{"name": "Basic Pokéballs", "qty": 45, "price": 12.0}], "qty": 45, "value": 540.0}, {"name": "Dragons", "price": null, "items": [{"name": "Large dragons", "qty": 30, "price": 20.0}, {"name": "XL dragons", "qty": 3, "price": 25.0}, {"name": "Large flex rex", "qty": 3, "price": 20.0}], "qty": 36, "value": 735.0}, {"name": "Keyrings", "price": 3.0, "items": [{"name": "Tadlings", "qty": 42, "price": 3.0}, {"name": "Zou mini keyrings", "qty": 35, "price": 3.0}, {"name": "Pokéscene keyrings", "qty": 143, "price": 3.0}, {"name": "Mario", "qty": 42, "price": 3.0}, {"name": "Harry Potter", "qty": 25, "price": 3.0}, {"name": "One Piece", "qty": 28, "price": 3.0}, {"name": "Labubu", "qty": 35, "price": 3.0}], "qty": 350, "value": 1050.0}, {"name": "Minis / Fidgets", "price": 2.5, "items": [{"name": "Zou mini", "qty": 306, "price": 2.5}, {"name": "Joystick", "qty": 106, "price": 2.5}, {"name": "Flex Rexi", "qty": 181, "price": 2.5}], "qty": 593, "value": 1482.5}, {"name": "Large items", "price": null, "items": [{"name": "Pokéscenes (large)", "qty": 38, "price": 12.0}, {"name": "Hueforges (large)", "qty": 10, "price": 20.0}, {"name": "Moon lamps", "qty": 10, "price": 20.0}], "qty": 58, "value": 856.0}];
+function renderStock(){
+  const fget=(k,d)=>{try{return localStorage.getItem(k)||d}catch{return d}};
+  const curCat=fget('st_cat','all'), curStatus=fget('st_status','all'), curSort=fget('st_sort','name');
+  const hideOut=fget('st_hideOut','1')==='1';
+  const db=state.stock||{};
+  const lines=[];
+  const names=new Set([...STOCK_SEED.flatMap(c=>c.items.map(i=>i.name)),...Object.keys(db)]);
+  for(const c of STOCK_SEED)for(const it of c.items){
+    const live=db[it.name];
+    lines.push({cat:c.name,price:it.price,name:it.name,qty:live&&live.qty!=null?+live.qty:it.qty});
+  }
+  for(const[n,v]of Object.entries(db))if(!names.has(n)&&v&&v.qty!=null)lines.push({cat:v.cat||'Uncategorised',price:+v.price||0,name:n,qty:+v.qty});
+  const fmt=v=>'£'+v.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const statusOf=l=>l.qty<=0?'out':l.qty<=4?'low':l.qty<10?'warn':'ok';
+  const stat=(k,v,n,cls='')=>`<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  const totU=lines.reduce((s,l)=>s+l.qty,0), totV=lines.reduce((s,l)=>s+l.qty*l.price,0);
+  const lowList=lines.filter(l=>l.qty>0&&l.qty<=4);
+  const outList=lines.filter(l=>l.qty<=0);
+  const maxQty=Math.max(...lines.map(l=>l.qty),1);
+  const lowCard=`<div class="stat low-card"><div class="k">Low</div><div class="v">${lowList.length}</div><div class="n">≤4 units · hover for detail</div>
+    <div class="inc-pop">
+      ${lowList.length?lowList.map(l=>`<div class="inc-row"><b>${esc(l.name)}</b> <span class="mut">${l.qty} left</span></div>`).join(''):'<div class="muted">Nothing low — stock looks healthy.</div>'}
+    </div></div>`;
+  const outCard=`<div class="stat low-card"><div class="k">Out</div><div class="v">${outList.length}</div><div class="n">sold out · hover for detail</div>
+    <div class="inc-pop">
+      ${outList.length?outList.map(l=>`<div class="inc-row"><b>${esc(l.name)}</b></div>`).join(''):'<div class="muted">Nothing sold out.</div>'}
+    </div></div>`;
+  const disp=lines.filter(l=>{
+    if(hideOut&&l.qty<=0)return false;
+    if(curCat!=='all'&&l.cat!==curCat)return false;
+    if(curStatus!=='all'&&statusOf(l)!==curStatus)return false;
+    return true;
+  }).sort((a,b)=>curSort==='qty'?b.qty-a.qty:curSort==='value'?(b.qty*b.price)-(a.qty*a.price):a.name.localeCompare(b.name));
+  const catOpts=['all',...new Set(lines.map(l=>l.cat))];
+  const filterBar=`<div class="fil-filters">
+    <select onchange="stFilter('cat',this.value)">${catOpts.map(c=>`<option value="${esc(c)}" ${curCat===c?'selected':''}>${c==='all'?'Category: all':esc(c)}</option>`).join('')}</select>
+    <select onchange="stFilter('status',this.value)">
+      <option value="all" ${curStatus==='all'?'selected':''}>Status: all</option>
+      <option value="ok" ${curStatus==='ok'?'selected':''}>Healthy (10+)</option>
+      <option value="warn" ${curStatus==='warn'?'selected':''}>Getting low (5–9)</option>
+      <option value="low" ${curStatus==='low'?'selected':''}>Low (1–4)</option>
+      <option value="out" ${curStatus==='out'?'selected':''}>Out (0)</option>
+    </select>
+    <select onchange="stFilter('sort',this.value)">
+      <option value="name" ${curSort==='name'?'selected':''}>Sort: name</option>
+      <option value="qty" ${curSort==='qty'?'selected':''}>Sort: qty ↓</option>
+      <option value="value" ${curSort==='value'?'selected':''}>Sort: line value ↓</option>
+    </select>
+    <label class="fil-hide"><input type="checkbox" ${hideOut?'checked':''} onchange="stFilter('hideOut',this.checked)"> Hide sold out</label>
+    <span class="mut fil-count">${disp.length}/${lines.length} items</span>
+  </div>`;
+  const flag=l=>l.qty<=0?'<span class="flag out">OUT</span>':l.qty<=4?'<span class="flag low">LOW</span>':l.qty<10?'<span class="flag warn">GETTING LOW</span>':'<span class="flag ok">OK</span>';
+  const lvlColor=l=>l.qty<=0?'var(--bad)':l.qty<=4?'var(--bad)':l.qty<10?'var(--warn)':'var(--ok)';
+  let html=tabHead('03','STOCK','finished goods on hand')+`<div class="stats">
+    ${stat('Units on hand',totU.toLocaleString(),lines.length+' product lines')}
+    ${stat('Stock value',fmt(totV),'at Gerry 2026-08-30 prices','ok')}
+    ${stat('Categories',lines.length?new Set(lines.map(l=>l.cat)).size:0,'')}
+    ${outCard}
+    ${lowCard}
+    <div class="stat"><div class="k">Baseline</div><div class="v">1,645</div><div class="n">units · Gerry's take</div></div>
+  </div>
+  ${filterBar}
+  <div class="tbl-wrap"><table><thead><tr>
+    <th>Product</th><th>Category</th><th style="text-align:right">On hand</th><th>Level</th><th style="text-align:right">Price</th><th style="text-align:right">Line value</th><th>Status</th><th style="text-align:right">Adjust</th>
+  </tr></thead><tbody>
+  ${disp.map(l=>`<tr>
+    <td><b>${esc(l.name)}</b></td>
+    <td class="muted">${esc(l.cat)}</td>
+    <td class="num"><b>${l.qty}</b></td>
+    <td><span class="lvbar"><i style="width:${Math.min(100,l.qty/maxQty*100)}%;background:${lvlColor(l)}"></i></span></td>
+    <td class="num">${fmt(l.price)}</td>
+    <td class="num">${fmt(l.qty*l.price)}</td>
+    <td>${flag(l)}</td>
+    <td class="num">
+      <button class="stbtn" onclick="bumpStock('${esc(l.name)}',-1)">−1</button>
+      <button class="stbtn" onclick="bumpStock('${esc(l.name)}',1)">+1</button>
+      <input type="number" class="stinput" id="${sqKey(l.name)}" value="${l.qty}" onchange="setQty('${esc(l.name)}')">
+    </td>
+  </tr>`).join('')}
+  </tbody></table></div>
+  <div class="grid2">
+    <div class="panel"><h3>Export</h3>
+      <button class="btn ghost" onclick="exportStock()">⬇ export CSV</button>
+      <div class="muted" style="font-size:11.5px;margin-top:8px">Full ledger snapshot with a date stamp — hand it to Gerry or keep for records.</div>
+    </div>
+    <div class="panel"><h3>About</h3>
+      <div class="muted" style="font-size:12px">Seeded from Gerry's 2026-08-30 stock take (1,645 units / £13,671.50). Every −1/+1/set writes live to the shared ledger — the same numbers Gerry's agents read via the API. Sold-out lines are hidden by default; untick to see the gaps.</div>
+    </div>
+  </div>`;
+  return html;
+}
+window.stFilter=(k,v)=>{
+  if(k==='hideOut'){localStorage.setItem('st_hideOut',v?'1':'0');}
+  else localStorage.setItem('st_'+k,v);
+  render();
+};
+const sqKey=n=>'sq-'+n.replace(/[^\w]/g,'_');
+window.bumpStock=(n,d)=>{const l=[...document.querySelectorAll('.card h3')].find(h=>h.textContent===n);void l;
+  const cur=(state.stock&&state.stock[n]&&state.stock[n].qty!=null)?+state.stock[n].qty:(STOCK_SEED.flatMap(c=>c.items).find(i=>i.name===n)||{}).qty||0;
+  up('stock/'+encodeURIComponent(n),{qty:Math.max(0,cur+d)}).catch(e=>alert('Save failed: '+e.message));};
+window.setQty=n=>{const el=document.getElementById(sqKey(n));const v=+el.value;if(isNaN(v)||v<0)return alert('Valid number, kid.');
+  up('stock/'+encodeURIComponent(n),{qty:v}).catch(e=>alert('Save failed: '+e.message));};
+window.exportStock=()=>{
+  const rows=[['category','item','qty','unit price','line value']];
+  const db=state.stock||{};
+  for(const c of STOCK_SEED)for(const it of c.items){const q=db[it.name]&&db[it.name].qty!=null?db[it.name].qty:it.qty;rows.push([c.name,it.name,q,it.price,(q*it.price).toFixed(2)]);}
+  const csv=rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'}),u=URL.createObjectURL(blob),el=document.createElement('a');
+  el.href=u;el.download='stock-'+new Date().toISOString().slice(0,10)+'.csv';el.click();URL.revokeObjectURL(u);};
+
+
+/* ---------- customer enquiries ---------- */
+function renderEnquiries(){
+  const rows=Object.entries(state.enquiries||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
+  const open=rows.filter(([,e])=>e.status==='new'),done=rows.filter(([,e])=>e.status!=='new');
+  const card=([id,e])=>`<div class="note"><b>${esc(e.name)}</b> <span class="mut">&lt;${esc(e.email)}&gt;</span>
+    <div style="margin:6px 0">${esc(e.msg)}</div>
+    <div class="meta"><span>${esc((e.created||'').slice(0,16).replace('T',' '))}</span>
+    <span><span class="badge ${e.status==='new'?'b-warn':e.status==='quoted'?'b-info':'b-ok'}">${esc(e.status||'new')}</span>
+    ${e.status==='new'?`<button class="btn ghost" style="padding:3px 10px" onclick="up('enquiries/${id}',{status:'quoted'})">mark quoted</button> `:''}
+    <button class="btn ghost" style="padding:3px 10px" onclick="del('enquiries/${id}')">✕</button></span></div></div>`;
+  let html=tabHead('06','ENQUIRIES','customer quote requests');
+  if(!rows.length)html+='<div class="empty">No customer enquiries yet. When the storefront form gets one, it lands here.</div>';
+  else{
+    html+=`<h3 style="margin:4px 0 10px">New (${open.length})</h3>`+(open.length?open.map(card).join(''):'<div class="empty" style="padding:14px">Inbox zero, kid.</div>');
+    if(done.length)html+=`<details style="margin-top:12px"><summary>Handled (${done.length})</summary>${done.map(card).join('')}</details>`;
+  }
+  return html;
+}
+
+
+/* ---------- christmas countdown board ---------- */
+function renderXmas(){
+  const db=state.stock||{};
+  const lines=XMAS_TARGETS.map(t=>{
+    // map "Charizard ball" -> stock key "Charizard" / "Basic Pokéballs" style keys
+    const key=Object.keys(db).find(k=>k.toLowerCase()===t.name.replace(' ball','').toLowerCase());
+    const have=key&&db[key].qty!=null?+db[key].qty:t.have;
+    const need=Math.max(0,t.target-have);
+    return {...t,have,need};
+  });
+  const done=lines.filter(l=>l.need<=0).length;
+  const totNeed=lines.reduce((s,l)=>s+l.need,0);
+  const totTarget=lines.reduce((s,l)=>s+l.target,0);
+  const pct=totTarget?Math.round(((totTarget-totNeed)/totTarget)*100):0;
+  const stat=(k,v,n,cls='')=>`<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  // days to mid-nov
+  const now=new Date();
+  const target=new Date(now.getFullYear(),10,15);
+  if(target<now)target.setFullYear(now.getFullYear()+1);
+  const days=Math.ceil((target-now)/86400000);
+  const perDay=days>0?(totNeed/days).toFixed(1):'—';
+  // blockers: gate analysis from filament (which colours gate which lines) + human blockers
+  const gates=[];
+  for(const l of lines){
+    if(l.need<=0)continue;
+    // find filament colours in the note or map to colours of that pokemon ball
+    const pokemon=l.name.replace(' ball','');
+    const cols=Object.entries(POKEBALL_MAP).filter(([c,balls])=>balls.some(b=>b.toLowerCase().includes(pokemon.toLowerCase()))).map(([c])=>c);
+    const shortCols=cols.filter(c=>{const f=Object.values(state.filament||{}).find(x=>x.name===c);return f&&(+f.kg||0)<1;});
+    gates.push({name:l.name,need:l.need,human:l.note||'',fil:shortCols});
+  }
+  let html=tabHead('10','CHRISTMAS','season target tracker — mid-Nov')+`<div class="stats">
+    ${stat('Days to season',days,'mid-Nov 15','warn')}
+    ${stat('Units to print',totNeed,perDay+' /day to hit target','warn')}
+    ${stat('Progress',pct+'%',totTarget+' target units')}
+    ${stat('Lines done',done+' /'+lines.length,'at target')}
+  </div>
+  <div class="tbl-wrap"><table><thead><tr>
+    <th>Line</th><th style="text-align:right">Have</th><th style="text-align:right">Target</th><th style="text-align:right">To print</th><th>Progress</th><th>Gated by</th>
+  </tr></thead><tbody>
+  ${lines.map(l=>{
+    const pctL=Math.min(100,Math.round(l.have/l.target*100));
+    const col=l.need<=0?'var(--ok)':pctL<40?'var(--bad)':pctL<70?'var(--warn)':'var(--ok)';
+    const g=gates.find(g=>g.name===l.name);
+    return `<tr>
+      <td><b>${esc(l.name)}</b>${l.note?`<div class="muted" style="font-size:11px">${esc(l.note)}</div>`:''}</td>
+      <td class="num">${l.have}</td>
+      <td class="num">${l.target}</td>
+      <td class="num"><b style="color:${l.need<=0?'var(--ok)':'var(--warn)'}">${l.need}</b></td>
+      <td><span class="lvbar"><i style="width:${pctL}%;background:${col}"></i></span><span class="pct">${pctL}%</span></td>
+      <td class="muted" style="white-space:normal;max-width:260px">${g&&g.fil.length?'⚠ filament: '+esc(g.fil.join(', ')):''}${g&&g.human?(g.fil.length?' · ':'')+esc(g.human):''}</td>
+    </tr>`;}).join('')}
+  </tbody></table></div>
+  <div class="grid2">
+    <div class="panel"><h3>Printing priority (from the plan)</h3>
+      <div class="muted" style="font-size:12.5px;line-height:1.8">
+      1. Gastly ×17, Gengar ×18, Haunter ×20 — P1 trio, fast sellers<br>
+      2. Charizard ×9 — slow (7.5h each), start nights<br>
+      3. Niche top-ups ×50 — A1 + Lego between batches<br>
+      4. Hueforge KC ×100+ — continuous filler, highest £/hr<br>
+      5. Eevee-line ×32 — the moment files land (bundle deadline)</div>
+    </div>
+    <div class="panel"><h3>Human blockers</h3>
+      <div class="muted" style="font-size:12.5px;line-height:1.8">
+      <b>Ben:</b> Eevee ball file (bundle hinges on it), Raichu, Charmeleon, Mew Blue, Magmar, Weezing, Zubat, Ekans<br>
+      <b>James:</b> Glaceon, Sylveon, Squirtle, Darkrai, Snorlax files<br>
+      <b>Ben:</b> LED modules ×30–50 before Temu flash price ends<br>
+      <b>Slice:</b> Blastoise Hueforge, Mini Rex, Labubu, Skull Statue</div>
+    </div>
+  </div>`;
+  return html;
+}
+
+/* ---------- print queue / schedule ---------- */
+function renderQueue(){
+  const rows=Object.entries(state.queue||{}).map(([id,q])=>({id,...q}));
+  const sortQ={'queued':0,'printing':1,'done':2};
+  rows.sort((a,b)=>(sortQ[a.status]??9)-(sortQ[b.status]??9)||(a.printer||'').localeCompare(b.printer||''));
+  const open=rows.filter(r=>r.status!=='done'), done=rows.filter(r=>r.status==='done');
+  const perPrinter={};
+  PRINTERS.forEach(p=>perPrinter[p]=open.filter(r=>r.printer===p&&r.status==='printing'));
+  const stat=(k,v,n,cls='')=>`<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  let html=tabHead('11','QUEUE','who prints what, on which machine')+`<div class="stats">
+    ${stat('In queue',open.filter(r=>r.status==='queued').length,'waiting to start')}
+    ${stat('Printing now',open.filter(r=>r.status==='printing').length,'of '+PRINTERS.length+' printers','ok')}
+    ${stat('Idle printers',(PRINTERS.length-open.filter(r=>r.status==='printing').length),'machines free',open.filter(r=>r.status==='printing').length<PRINTERS.length?'warn':'')}
+    ${stat('Completed',done.length,'this season')}
+  </div>
+  <div class="card" style="margin-bottom:14px"><h3>Add to queue</h3>
+    <div class="bar" style="margin-top:10px">
+      <input id="q-what" placeholder="What (e.g. Gastly ball ×4)">
+      <select id="q-printer">${PRINTERS.map(p=>`<option>${p}</option>`).join('')}</select>
+      <input id="q-eta" type="date" value="${today()}" style="max-width:150px">
+      <select id="q-who" style="max-width:100px"><option>James</option><option>Jammin</option></select>
+      <button class="btn" onclick="addQ()">→ Queue</button>
+    </div>
+  </div>
+  <div class="grid2" style="margin-bottom:14px">
+    ${PRINTERS.map(p=>{
+      const active=perPrinter[p][0];
+      return `<div class="panel" style="border-left:3px solid ${active?'var(--acc)':'var(--bord)'}"><h3>${p}</h3>
+        ${active?`<b>${esc(active.what)}</b><div class="muted" style="font-size:11.5px">ETA ${esc(active.eta||'—')} · ${esc(active.who||'')}</div>
+          <div class="actions"><button onclick="setQ('${active.id}','done')">✔ done</button></div>`
+        :'<span class="flag ok">IDLE</span>'}
+      </div>`;}).join('')}
+  </div>
+  ${open.length?'<h3 style="margin:4px 0 10px">Queue</h3><div class="tbl-wrap"><table><thead><tr><th>What</th><th>Printer</th><th>Assigned</th><th>ETA</th><th>Status</th><th></th></tr></thead><tbody>'
+    +open.map(r=>`<tr><td><b>${esc(r.what)}</b></td><td>${esc(r.printer||'—')}</td><td>${esc(r.who||'')}</td><td>${esc(r.eta||'—')}</td>
+    <td><span class="badge ${r.status==='printing'?'b-info':'b-warn'}">${esc(r.status)}</span></td>
+    <td class="num">
+      ${r.status==='queued'?`<button class="stbtn" onclick="setQ('${r.id}','printing')">▶ start</button>`:''}
+      ${r.status==='printing'?`<button class="stbtn" onclick="setQ('${r.id}','done')">✔ done</button>`:''}
+      <button class="stbtn" onclick="del('queue/${r.id}')">✕</button>
+    </td></tr>`).join('')+'</tbody></table></div>':'<div class="empty">Queue is empty — add a print job above.</div>'}
+  ${done.length?`<details style="margin-top:10px"><summary>Completed (${done.length})</summary><div class="cards" style="margin-top:10px">${done.map(r=>`<div class="card"><b>${esc(r.what)}</b><div class="meta">${esc(r.printer||'')} · ${esc(r.eta||'')}</div></div>`).join('')}</div></details>`:''}`;
+  return html;
+}
+window.addQ=()=>{
+  const what=$('q-what').value.trim();if(!what)return alert('What are we printing, kid?');
+  add('queue',{what,printer:$('q-printer').value,eta:$('q-eta').value,who:$('q-who').value,status:'queued',created:today()});
+  $('q-what').value='';
+};
+window.setQ=(id,s)=>up('queue/'+id,{status:s}).catch(e=>alert('Save failed: '+e.message));
+
+/* ---------- filament reorder alerts (computed on filament render) ---------- */
+function filAlerts(){
+  const rows=Object.values(state.filament||{});
+  const low=rows.filter(f=>((+f.kg||0))>0&&(+f.kg||0)<(+f.min||0.4));
+  const out=rows.filter(f=>!(+f.kg||0));
+  const combined=rows.filter(f=>((+f.kg||0)>0&&(+f.kg||0)<1));
+  let html='';
+  if(out.length)html+=`<div class="note" style="border-color:var(--bad)"><b>⚠ EMPTY (${out.length}):</b> ${esc(out.map(f=>f.name).join(', '))} — reorder now</div>`;
+  if(low.length)html+=`<div class="note" style="border-color:var(--warn)"><b>⚑ LOW (${low.length}):</b> ${esc(low.map(f=>f.name+' ('+(+f.kg).toFixed(2)+'kg)').join(', '))}</div>`;
+  if(combined.length)html+=`<div class="note" style="border-color:var(--acc)"><b>◆ Combined &lt;1kg (${combined.length}):</b> ${esc(combined.map(f=>f.name).join(', '))} — one good print away from empty</div>`;
+  return html;
+}
+
+/* ---------- cost & profit maths ---------- */
+function filCost(grams){return grams*EUR_PER_KG/1000;} // £ per print
+
+
+/* ---------- cost & profit tracker ---------- */
+function renderCosts(){
+  const live=state.costs||{};   // manual overrides by product name
+  const lines=COST_SEED.map(c=>{
+    const o=live[c.name]||{};
+    return {...c, price:o.price!=null?+o.price:c.price, min:o.min!=null?+o.min:c.min,
+      grams:o.grams!=null?+o.grams:c.grams, hidden:o.hidden};
+  }).filter(c=>!c.hidden);
+  const fmt=v=>'£'+(+v).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const pph=c=>{
+    if(!c.price||!c.min)return null;
+    const fil=c.grams?c.grams*EUR_PER_KG/1000:0;
+    return {margin:c.price-fil, hr:c.min/60, pph:(c.price-fil)/(c.min/60)};
+  };
+  const withPph=lines.map(c=>({...c,calc:pph(c)})).filter(c=>c.calc);
+  const best=[...withPph].sort((a,b)=>b.calc.pph-a.calc.pph);
+  const avgPph=withPph.length?(withPph.reduce((s,c)=>s+c.calc.pph,0)/withPph.length):0;
+  const stat=(k,v,n,cls='')=>`<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  let html=tabHead('12','COSTS','profit per print-hour by product')+`<div class="stats">
+    ${stat('Best £/hr',best.length?'£'+best[0].calc.pph.toFixed(2):'—',best.length?esc(best[0].name):'','ok')}
+    ${stat('Average £/hr','£'+avgPph.toFixed(2),withPph.length+' products costed')}
+    ${stat('Filament rate','€11.50/kg','all maths uses this')}
+    ${stat('Most profitable hour','€'+((best[0]?best[0].calc.pph:0)*8).toFixed(0),best[0]?'8hrs of '+esc(best[0].name.slice(0,18)):'')}
+  </div>
+  <div class="tbl-wrap"><table><thead><tr>
+    <th>Product</th><th>Category</th><th style="text-align:right">Print min</th><th style="text-align:right">Filament g</th><th style="text-align:right">Fil £</th><th style="text-align:right">Price</th><th style="text-align:right">Margin</th><th style="text-align:right">£ / hr</th>
+  </tr></thead><tbody>
+  ${best.map(c=>`<tr>
+    <td><b>${esc(c.name)}</b></td>
+    <td class="muted">${esc(c.cat)}</td>
+    <td class="num">${c.min||'—'}</td>
+    <td class="num">${c.grams||'—'}</td>
+    <td class="num">${c.grams?fmt(c.grams*EUR_PER_KG/1000):'—'}</td>
+    <td class="num">${c.price?fmt(c.price):'—'}</td>
+    <td class="num" style="color:${c.calc.margin<2?'var(--warn)':'var(--ok)'}">${fmt(c.calc.margin)}</td>
+    <td class="num"><b style="color:${c.calc.pph>=10?'var(--ok)':c.calc.pph>=5?'var(--warn)':'var(--mut)'}">£${c.calc.pph.toFixed(2)}</b></td>
+  </tr>`).join('')}
+  </tbody></table></div>
+  <div class="grid2">
+    <div class="panel"><h3>What this says</h3>
+      <div class="muted" style="font-size:12px;line-height:1.8">
+      <b style="color:var(--ok)">Green (≥£10/hr)</b>: prioritise — Hueforge Encounters and quick balls dominate.<br>
+      <b style="color:var(--warn)">Amber (£5–10/hr)</b>: fine as filler between long runs.<br>
+      <b style="color:var(--mut)">Grey (&lt;£5/hr)</b>: only print when stock-out forces it or as bundle parts.<br>
+      Margin = price − filament at €11.50/kg. Labour not costed — you'd be printing anyway.</div>
+    </div>
+    <div class="panel"><h3>Top 5 by £/hr</h3>
+      <div class="muted" style="font-size:12.5px;line-height:1.9">
+      ${best.slice(0,5).map((c,i)=>`${i+1}. <b>${esc(c.name)}</b> — £${c.calc.pph.toFixed(2)}/hr`).join('<br>')}</div>
+    </div>
+  </div>`;
+  return html;
+}
+
+/* ---------- shell ---------- */
+const RENDERS={filament:renderFilament,jobs:renderJobs,assign:renderAssign,files:renderFiles,stock:renderStock,products:renderProducts,enquiries:renderEnquiries,orders:renderOrders,notes:renderNotes,xmas:renderXmas,queue:renderQueue,costs:renderCosts};
+function render(){
+  const t=tab();
+  $('app').innerHTML=RENDERS[t]();
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('act',b.dataset.t===t));
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{localStorage.setItem('printops_tab',b.dataset.t);render();});
+
+/* ---------- start ---------- */
+const cfgRaw=localStorage.getItem(LS);
+if(cfgRaw){try{boot(JSON.parse(cfgRaw));}catch{localStorage.removeItem(LS);show('setup');}}
+else show('setup');
+</script>
+</body>
+</html>
