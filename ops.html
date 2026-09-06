@@ -487,9 +487,12 @@ function renderFilament(){
       ${showMoves.slice(0,20).map(m=>`<div class="mv"><span class="when">${esc(m.d||'')}</span><span class="what"><span class="who ${m.who}">${WHO_NAME[m.who]||m.who}</span>${esc(m.what||'')}</span>${m.amt!=null?`<span class="amt ${m.amt<0?'neg':'pos'}">${m.amt>0?'+':''}${m.amt}g</span>`:''}</div>`).join('')||'<div class="muted">No movements logged.</div>'}
     </div></div>
     <div class="panel"><h3>Log movement</h3>
-      <div class="form-row"><select id="fm-col">${stocked.map(r=>`<option value="${r.id}">${esc(r.name)} (${(+r.kg||0).toFixed(2)}kg)</option>`).join('')}</select></div>
+      <div class="form-row"><select id="fm-col">
+        <optgroup label="On the shelf">${master.filter(r=>r.kg>0).map(r=>`<option value="${r.id}">${esc(r.name)} — ${(+r.kg||0).toFixed(2)}kg</option>`).join('')}</optgroup>
+        <optgroup label="Not in stock (0 kg)">${master.filter(r=>r.kg<=0).map(r=>`<option value="${r.id}">${esc(r.name)} — 0.00kg</option>`).join('')}</optgroup>
+      </select></div>
       <div class="form-row">
-        <select id="fm-type"><option value="use">Used on print</option><option value="add">Stock take / top-up</option><option value="buy">New purchase</option><option value="xfer">Transferred</option></select>
+        <select id="fm-type"><option value="use">Used on print</option><option value="add">Stock take / top-up</option><option value="buy">New purchase</option><option value="new">New spool in (create)</option><option value="xfer">Transferred</option></select>
         <input type="number" id="fm-g" placeholder="grams" step="10" style="width:90px">
         <select id="fm-who" style="width:auto"><option value="J">Jammin</option><option value="B">James</option></select>
         <input type="text" id="fm-note" placeholder="note (job / reason)" style="flex:1;min-width:140px">
@@ -511,13 +514,19 @@ window.filLog=async()=>{
   const g=+document.getElementById('fm-g').value||0,who=document.getElementById('fm-who').value;
   const note=document.getElementById('fm-note').value.trim();
   if(!g)return alert('grams required, kid.');
-  const cur=+(state.filament[id]&&state.filament[id].kg)||0;
+  const metaKey=id; // master ids are already name-safe keys
+  const catMeta=FIL_CATALOG.find(c=>String(c.name).replace(/[^\w ]/g,'')===metaKey)||FIL_EXTRA.find(c=>String(c.name).replace(/[^\w ]/g,'')===metaKey);
+  const live=state.filament[id]||{};
+  const name=live.name||catMeta?live.name||(catMeta&&catMeta.name):id;
+  const cur=+(live.kg)||0;
   const delta=type==='use'?-g:g;
   const nk=Math.max(0,Math.round((cur+delta/1000)*1000)/1000);
-  const verbs={use:'used on print',add:'stock top-up',buy:'new stock added',xfer:'transferred'};
-  const name=state.filament[id].name;
+  const verbs={use:'used on print',add:'stock top-up',buy:'new stock added',new:'new spool in — first entry',xfer:'transferred'};
   try{
-    await upd('filament/'+id,{kg:nk});
+    if(!live.name&&catMeta){
+      await upd('filament/'+metaKey,{name:catMeta.name,type:catMeta.series,sw:catMeta.hex,kg:0,spools:0,owner:who,min:0.4});
+    }
+    await upd('filament/'+metaKey,{kg:nk});
     await add('fmoves',{d:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),who,
       what:`${verbs[type]} — ${name}${note?': '+note:''}`,amt:delta,ts:new Date().toISOString()});
     document.getElementById('fm-g').value='';document.getElementById('fm-note').value='';
