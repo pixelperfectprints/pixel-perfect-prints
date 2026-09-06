@@ -289,26 +289,13 @@ function up(path,val){return db.ref('ops/'+path).set(val);}
 function upd(path,val){return db.ref('ops/'+path).update(val);}
 const FIL_RECEIVED=JSON.parse((()=>{try{return localStorage.getItem('fil_received')||'[]'}catch{return '[]'}})());
 window.filRecvAll=async()=>{
-  if(!FIL_INCOMING.length)return alert('Nothing incoming to receive.');
-  if(!confirm('Receive all '+FIL_INCOMING.length+' incoming items into stock?'))return;
+  const INC=getIncoming();
+  if(!INC.length)return alert('Nothing incoming to receive.');
+  if(!confirm('Receive all '+INC.length+' incoming items into stock?'))return;
   let done=0;
-  for(const x of FIL_INCOMING){ if(FIL_RECEIVED.includes(x.name))continue; try{await window.filRecv(x.name,true);done++;}catch(e){alert('Failed '+x.name+': '+e.message);} }
+  for(const x of INC){ if(FIL_RECEIVED.includes(x.name))continue; try{await window.filRecv(x.name,true);done++;}catch(e){alert('Failed '+x.name+': '+e.message);} }
   if(done)alert('Received '+done+' items.');
   render();
-};
-window.filRecv=async(name,silent)=>{
-  // add incoming kg to the matching filament record (owner Jammin)
-  const item=FIL_INCOMING.find(x=>x.name===name); if(!item)return;
-  const id=String(name).replace(/[^\w ]/g,'');
-  const cur=(state.filament&&state.filament[id])||{};
-  const curKg=cur.kg!=null?+cur.kg:0, curSp=cur.spools!=null?+cur.spools:0;
-  const newKg=Math.round((curKg+item.kg)*1000)/1000, newSp=curSp+Math.round(item.kg);
-  await upd('filament/'+id,{kg:newKg,spools:newSp,owner:'J',name:item.name,type:item.type||cur.type||'PLA Matte'});
-  if(!FIL_RECEIVED.includes(name))FIL_RECEIVED.push(name);
-  localStorage.setItem('fil_received',JSON.stringify(FIL_RECEIVED));
-  await add('fmoves',{d:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),who:'J',
-    what:'received incoming — '+name+' (+'+item.kg+'kg)',amt:Math.round(item.kg*1000),ts:new Date().toISOString()});
-  if(!silent){render();}
 };
 
 function add(path,val){return db.ref('ops/'+path).push(val);}
@@ -372,6 +359,52 @@ const POKEBALL_MAP={"Dark Blue": ["Bulbasaur Ball", "Charizard Ball", "Charizard
 const PB_ALIAS={'Basic Green':'Bambu Green'};
 const pbFor=name=>POKEBALL_MAP[PB_ALIAS[name]||name]||null;
 function tabHead(num,title,sub){return `<div class="tabhead"><span class="n">${num}</span><h2>${title}</h2><span class="sub">${sub}</span></div>`;}
+function getIncoming(){
+  const orders=Object.values(state.orders||{}).filter(o=>o.status==='incoming'||o.status==='shipped');
+  const out=[];
+  const seen=new Set();
+  // live orders first — they carry colour + qty (1kg units)
+  for(const o of orders){
+    const col=o.colour||o.what;
+    if(!col)continue;
+    // resolve display name + code from catalogue if possible
+    const meta=FIL_CATALOG.find(c=>c.name.toLowerCase()===String(col).toLowerCase())
+      ||FIL_EXTRA.find(c=>c.name.toLowerCase()===String(col).toLowerCase());
+    const codeM=String(o.what).match(/\((\d{4,5})\)/);
+    out.push({name:meta?meta.name:col,type:'Refill 1kg',kg:+o.qty||1,
+      code:meta?String(10000+parseInt(meta.name.length)):(codeM?codeM[1]:'—'),
+      note:'Order '+o.status+' · ETA '+(o.eta||'—'),order:true,orderName:col});
+    seen.add((meta?meta.name:col).toLowerCase());
+  }
+  // seed fallback for items NOT already logged as orders
+  for(const x of FIL_INCOMING){
+    if(!seen.has(x.name.toLowerCase()))out.push(x);
+  }
+  return out;
+}
+window.filRecv=async(name,silent)=>{
+  // add incoming kg to the matching filament record (owner Jammin)
+  const INC=getIncoming();
+  const item=INC.find(x=>x.name===name); if(!item)return;
+  const id=String(name).replace(/[^\w ]/g,'');
+  const cur=(state.filament&&state.filament[id])||{};
+  const curKg=cur.kg!=null?+cur.kg:0, curSp=cur.spools!=null?+cur.spools:0;
+  const newKg=Math.round((curKg+item.kg)*1000)/1000, newSp=curSp+Math.round(item.kg);
+  await upd('filament/'+id,{kg:newKg,spools:newSp,owner:'J',name:item.name,type:item.type||cur.type||'PLA Matte'});
+  if(!FIL_RECEIVED.includes(name))FIL_RECEIVED.push(name);
+  localStorage.setItem('fil_received',JSON.stringify(FIL_RECEIVED));
+  // if this came from a live order, mark it delivered
+  if(item.order){
+    const oid=Object.keys(state.orders||{}).find(k=>{
+      const o=state.orders[k];
+      return (o.status==='incoming'||o.status==='shipped')&&(o.colour||'').toLowerCase()===item.name.toLowerCase();
+    });
+    if(oid)await upd('orders/'+oid,{status:'delivered'});
+  }
+  await add('fmoves',{d:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),who:'J',
+    what:'received incoming — '+name+' (+'+item.kg+'kg)',amt:Math.round(item.kg*1000),ts:new Date().toISOString()});
+  if(!silent){render();}
+};
 function renderFilament(){
   const fget=(k,d)=>{try{return localStorage.getItem(k)||d}catch{return d}};
   const curOwner=fget('fil_owner','all'), curSeries=fget('fil_series','all'), curStatus=fget('fil_status','all');
@@ -416,10 +449,11 @@ function renderFilament(){
   const moves=Object.entries(state.fmoves||{}).map(([id,m])=>({id,...m})).sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
   const showMoves=moves.length?moves:FIL_SEED_MOVES.map((m,i)=>({id:'seed'+i,...m}));
   const stocked=master.filter(r=>r.kg>0);
-  const incKg=FIL_INCOMING.reduce((a,x)=>a+x.kg,0);
-  const incCard=`<div class="stat inc-card"><div class="k">Incoming</div><div class="v">${incKg} kg</div><div class="n">${FIL_INCOMING.length} items · hover for detail</div>
+  const INC=getIncoming();
+  const incKg=INC.reduce((a,x)=>a+x.kg,0);
+  const incCard=`<div class="stat inc-card"><div class="k">Incoming</div><div class="v">${incKg} kg</div><div class="n">${INC.length} items · hover for detail</div>
     <div class="inc-pop">
-      ${FIL_INCOMING.map(x=>`<div class="inc-row">${FIL_RECEIVED.includes(x.name)?'<span class="flag ok" style="margin-right:6px">✓ received</span>':''}<span class="sw" style="background:${x.sw||'#00e5ff'}"></span><b>${esc(x.name)}</b> <span class="muted">${esc(x.type)}</span> · code ${x.code}<div class="inc-note">${esc(x.note)}</div>
+      ${INC.map(x=>`<div class="inc-row">${FIL_RECEIVED.includes(x.name)?'<span class="flag ok" style="margin-right:6px">✓ received</span>':''}<span class="sw" style="background:${x.sw||'#00e5ff'}"></span><b>${esc(x.name)}</b> <span class="muted">${esc(x.type)}</span> · code ${x.code}<div class="inc-note">${esc(x.note)}</div>
         ${FIL_RECEIVED.includes(x.name)?'':'<button class="btn ghost" style="padding:2px 8px;font-size:11px;margin-top:4px" onclick="filRecv(${JSON.stringify(x.name)})">✔ receive</button>'}</div>`).join('')}
       <div class="mut" style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">Order placed 03 Sep.
         <button class="btn ghost" style="padding:3px 10px;font-size:11px" onclick="filRecvAll()">✔ Receive all</button></div>
@@ -446,10 +480,10 @@ function renderFilament(){
     <span class="mut fil-count">${disp.length}/${master.length} colours</span>
   </div>`;
   const incBanner=(()=>{
-  const items=FIL_INCOMING.map(x=>`<span class="fil-inc" title="${esc(x.note||'')}"><b>${esc(x.name)}</b> ×${Math.round(x.kg)} <span class="muted">(${x.code})</span></span>`);
+  const items=INC.map(x=>`<span class="fil-inc" title="${esc(x.note||'')}"><b>${esc(x.name)}</b> ×${Math.round(x.kg)} <span class="muted">(${x.code})</span></span>`);
   const row=items.join('');
   return `<div class="fil-banner">
-    <div class="fil-banner-head"><span class="flag inc">INCOMING</span><span class="mut">${FIL_INCOMING.length} items · ${FIL_INCOMING.reduce((s,x)=>s+x.kg,0)} kg · hover an item for its note</span></div>
+    <div class="fil-banner-head"><span class="flag inc">INCOMING</span><span class="mut">${INC.length} items · ${INC.reduce((s,x)=>s+x.kg,0)} kg · hover an item for its note</span></div>
     <div class="fil-banner-rows">
       <div class="fil-track">${row}</div>
       <div class="fil-track rev">${row}</div>
