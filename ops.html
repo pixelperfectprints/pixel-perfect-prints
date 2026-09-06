@@ -676,11 +676,19 @@ window.delProd=id=>{if(confirm('Remove this product from the public site?'))del(
 /* ---------- orders ---------- */
 function renderOrders(){
   const rows=Object.entries(state.orders||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
-  let html=tabHead('08','ORDERS','incoming stock & deliveries')+`<div class="bar">
-    <input id="o-what" placeholder="Item (e.g. 4× Bambu PLA Galaxy Black)">
-    <input id="o-eta" type="date" value="${today()}" style="max-width:150px">
-    <select id="o-status"><option>incoming</option><option>shipped</option><option>delivered</option><option>cancelled</option></select>
-    <button class="btn" onclick="addOrder()">+ Log order</button></div>`;
+  let html=tabHead('08','ORDERS','incoming stock & deliveries')+`<div class="card" style="margin-bottom:14px"><h3>Log a filament order</h3>
+    <div class="bar" style="margin-top:10px;position:relative">
+      <div style="flex:2;position:relative;min-width:180px">
+        <input id="o-what" placeholder="Filament colour (type to search all 55)" autocomplete="off" oninput="oPredict()" onkeydown="oKey(event)" style="width:100%">
+        <div id="o-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:80;background:var(--card2);border:1px solid var(--cyan);border-radius:8px;max-height:240px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.6)"></div>
+      </div>
+      <input id="o-qty" type="number" min="1" step="1" placeholder="Qty (1kg units)" style="max-width:130px">
+      <input id="o-eta" type="date" value="${today()}" style="max-width:150px">
+      <select id="o-status" style="max-width:130px"><option>incoming</option><option>shipped</option><option>delivered</option><option>cancelled</option></select>
+      <button class="btn" onclick="addOrder()">+ Log order</button>
+    </div>
+    <div class="mut">Type a colour name — pick from the list. Qty = number of 1kg spools/refills ordered.</div>
+  </div>`;
   if(!rows.length)html+='<div class="empty">No orders/deliveries tracked.</div>';
   html+=rows.map(([id,o])=>`
     <div class="note"><b>${esc(o.what)}</b>
@@ -689,8 +697,41 @@ function renderOrders(){
     </div>`).join('');
   return html;
 }
-window.addOrder=()=>{const w=$('o-what').value.trim();if(!w)return;add('orders',{what:w,eta:$('o-eta').value,status:$('o-status').value,created:today()});$('o-what').value='';};
-window.setOrder=(id,s)=>up('orders/'+id,{status:s});
+function oAllColours(){
+  const names=new Set();
+  FIL_CATALOG.forEach(c=>names.add(c.name));
+  FIL_EXTRA.forEach(c=>names.add(c.name));
+  Object.values(state.filament||{}).forEach(f=>{if(f.name)names.add(f.name)});
+  return [...names].sort();
+}
+window.oPredict=()=>{
+  const q=$('o-what').value.trim().toLowerCase(),drop=$('o-drop');
+  if(!q){drop.style.display='none';return;}
+  const hits=oAllColours().filter(n=>n.toLowerCase().includes(q)).slice(0,12);
+  if(!hits.length){drop.style.display='none';return;}
+  drop.innerHTML=hits.map(n=>{
+    const cat=Object.values(state.filament||{}).find(f=>f.name===n);
+    return `<div class="o-opt" onclick="oPick(${JSON.stringify(n).replace(/"/g,'&quot;')})" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bord);font-weight:600">${esc(n)}${cat?` <span class="mut" style="font-size:11px">· ${cat.kg?cat.kg+'kg on shelf':'not in stock'}</span>`:''}</div>`;
+  }).join('');
+  drop.style.display='block';
+};
+window.oKey=e=>{
+  const drop=$('o-drop');
+  if(e.key==='Enter'){
+    const first=drop.querySelector('.o-opt');
+    if(drop.style.display!=='none'&&first){e.preventDefault();first.click();}
+  } else if(e.key==='Escape'){drop.style.display='none';}
+};
+window.oPick=n=>{
+  $('o-what').value=n;$('o-drop').style.display='none';$('o-qty').focus();
+};
+window.addOrder=()=>{
+  const w=$('o-what').value.trim();if(!w)return alert('What are we ordering, kid?');
+  const qty=Math.max(1,Math.round(+$('o-qty').value||1));
+  add('orders',{what:w+' ×'+qty+' (1kg)',eta:$('o-eta').value,status:$('o-status').value,created:today(),colour:w,qty});
+  $('o-what').value='';$('o-qty').value='';
+};
+
 
 /* ---------- notes ---------- */
 function renderNotes(){
