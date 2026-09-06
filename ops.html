@@ -677,6 +677,11 @@ window.delProd=id=>{if(confirm('Remove this product from the public site?'))del(
 function renderOrders(){
   const rows=Object.entries(state.orders||{}).sort((a,b)=>(b[1].created||'').localeCompare(a[1].created||''));
   let html=tabHead('08','ORDERS','incoming stock & deliveries')+`<div class="card" style="margin-bottom:14px"><h3>Log a filament order</h3>
+    <div class="bchips" style="margin-top:10px">
+      <span class="bchip" id="o-mode-single" onclick="oMode('single')">single colour</span>
+      <span class="bchip" id="o-mode-paste" onclick="oMode('paste')">paste whole order</span>
+    </div>
+    <div id="o-single">
     <div class="bar" style="margin-top:10px;position:relative">
       <div style="flex:2;position:relative;min-width:180px">
         <input id="o-what" placeholder="Filament colour (type to search all 55)" autocomplete="off" oninput="oPredict()" onkeydown="oKey(event)" style="width:100%">
@@ -688,6 +693,15 @@ function renderOrders(){
       <button class="btn" onclick="addOrder()">+ Log order</button>
     </div>
     <div class="mut">Type a colour name — pick from the list. Qty = number of 1kg spools/refills ordered.</div>
+    </div>
+    <div id="o-paste" style="display:none">
+      <textarea id="o-block" placeholder="Paste the order here, e.g.:&#10;Desert Tan (11401) / Refill / 1kg X3&#10;Lilac purple (11700) / Refill / 1kg X3&#10;&#10;Also handles one-per-line and X3 on its own line." style="width:100%;height:130px;background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:10px;border-radius:8px;font-size:13px;font-family:monospace;resize:vertical"></textarea>
+      <div class="bar" style="margin-top:8px">
+        <input id="o-block-eta" type="date" value="${today()}" style="max-width:150px">
+        <button class="btn" onclick="oParseBlock()">→ Parse &amp; log order</button>
+        <span class="mut" id="o-block-out"></span>
+      </div>
+    </div>
   </div>`;
   if(!rows.length)html+='<div class="empty">No orders/deliveries tracked.</div>';
   html+=rows.map(([id,o])=>`
@@ -724,6 +738,61 @@ window.oKey=e=>{
 };
 window.oPick=n=>{
   $('o-what').value=n;$('o-drop').style.display='none';$('o-qty').focus();
+};
+window.oMode=m=>{
+  $('o-single').style.display=m==='single'?'':'none';
+  $('o-paste').style.display=m==='paste'?'':'none';
+  $('o-mode-single').style.borderColor=m==='single'?'var(--cyan)':'var(--bord)';
+  $('o-mode-paste').style.borderColor=m==='paste'?'var(--cyan)':'var(--bord)';
+};
+window.oParseBlock=()=>{
+  const raw=$('o-block').value;
+  if(!raw.trim())return alert('Paste the order text first.');
+  const names=oAllColours();
+  const findCol=t=>{
+    const tl=t.toLowerCase();
+    // direct name match
+    let hit=names.find(n=>n.toLowerCase()===tl);
+    if(hit)return hit;
+    // partial: the text token is contained in a colour name or vice versa
+    hit=names.find(n=>n.toLowerCase().includes(tl)||tl.includes(n.toLowerCase()));
+    return hit||null;
+  };
+  const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const orders=[];let pending=null;
+  const push=(col,qty)=>{
+    if(col&&qty>0)orders.push({colour:col,qty});
+    else if(col)orders.push({colour:col,qty:1});
+  };
+  for(const ln of lines){
+    // skip bare series lines like "PLA Matte" / "PLA Basic"
+    if(/^pla\s*(matte|basic|silk)?( gradient)?$/i.test(ln))continue;
+    // "X3" style qty on its own line
+    const xOnly=ln.match(/^[x×]\s*(\d+)$/i);
+    if(xOnly){if(pending){push(pending,parseInt(xOnly[1]));pending=null;}continue;}
+    // full line: colour (code) ... 1kg ... maybe X3 at end
+    const m=ln.match(/^(.+?)\s*\((\d{4,5})\)\s*(?:\/\s*[^/]*\s*)?(?:\/\s*([\d.]+)\s*kg)?(?:.*?[x×]\s*(\d+))?\s*$/i);
+    if(m){
+      const col=findCol(m[1].trim());
+      const hasX=m[4]&&parseInt(m[4])>0;
+      const qty=hasX?parseInt(m[4]):null;
+      if(pending){push(pending,1);pending=null;} // flush dangling previous
+      if(col){ if(hasX)push(col,qty); else pending=col; } // no X → wait for X-line
+      else orders.push({colour:m[1].trim()+' (UNKNOWN — code '+m[2]+')',qty:qty||1});
+      continue;
+    }
+    // plain "Colour Name X3" single line
+    const m2=ln.match(/^(.+?)\s+[x×]\s*(\d+)$/i);
+    if(m2){const col=findCol(m2[1].trim());if(col){push(col,parseInt(m2[2]));continue;}}
+    // otherwise: treat as pending colour waiting for a future X<N> line
+    pending=ln.replace(/\s*\/.*$/,'').trim();
+  }
+  if(pending)push(pending,1);
+  if(!orders.length)return $('o-block-out').textContent='⚠ No orders recognised — check the format.';
+  const eta=$('o-block-eta').value;
+  Promise.all(orders.map(o=>add('orders',{what:o.colour+' ×'+o.qty+' (1kg)',eta,status:'incoming',created:today(),colour:o.colour,qty:o.qty})))
+    .then(()=>{$('o-block-out').textContent='✓ Logged '+orders.length+' orders: '+orders.map(o=>o.colour+' ×'+o.qty).join(', ');$('o-block').value='';render();})
+    .catch(e=>{$('o-block-out').textContent='⚠ Save failed: '+e.message;});
 };
 window.addOrder=()=>{
   const w=$('o-what').value.trim();if(!w)return alert('What are we ordering, kid?');
