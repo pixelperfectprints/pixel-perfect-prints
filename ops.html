@@ -142,10 +142,13 @@ tr:hover td{background:var(--card2)}
 .stats{gap:8px;margin-bottom:10px}
 .stat{padding:9px 12px}
 .stat .v{font-size:18px}
-/* incoming scrolling banner */
+/* incoming scrolling banner — two rows, all items visible within ~8s */
 .fil-banner{overflow:hidden;border:1px solid var(--bord);border-radius:9px;background:var(--card);margin-bottom:14px}
-.fil-track{display:flex;gap:40px;width:max-content;padding:9px 14px;animation:filslide 22s linear infinite}
-.fil-inc{white-space:nowrap;font-size:13px;color:var(--fg);font-weight:500}
+.fil-banner-head{display:flex;gap:10px;align-items:center;padding:7px 14px 0}
+.fil-banner-rows{display:grid}
+.fil-track{display:flex;gap:34px;width:max-content;padding:7px 14px;animation:filslide 16s linear infinite}
+.fil-track.rev{animation-direction:reverse}
+.fil-inc{white-space:nowrap;font-size:13px;color:var(--fg);font-weight:500;cursor:help}
 .fil-inc b{color:var(--cyan);font-family:'Orbitron';font-size:12.5px}
 @keyframes filslide{to{transform:translateX(-50%)}}
 @media(prefers-reduced-motion:reduce){.fil-track{animation:none}}
@@ -442,10 +445,16 @@ function renderFilament(){
     <label class="fil-hide"><input type="checkbox" ${hideEmpty?'checked':''} onchange="filFilter('hideEmpty',this.checked)"> Hide empty</label>
     <span class="mut fil-count">${disp.length}/${master.length} colours</span>
   </div>`;
-  const incBanner=`<div class="fil-banner"><div class="fil-track">
-    ${FIL_INCOMING.map(x=>`<span class="fil-inc"><b>${esc(x.name)}</b> ${esc(x.type)} · code ${x.code} · ${esc(x.note)}</span>`).join('')}
-    ${FIL_INCOMING.map(x=>`<span class="fil-inc"><b>${esc(x.name)}</b> ${esc(x.type)} · code ${x.code} · ${esc(x.note)}</span>`).join('')}
-  </div></div>`;
+  const incBanner=(()=>{
+  const items=FIL_INCOMING.map(x=>`<span class="fil-inc" title="${esc(x.note||'')}"><b>${esc(x.name)}</b> ×${Math.round(x.kg)} <span class="muted">(${x.code})</span></span>`);
+  const row=items.join('');
+  return `<div class="fil-banner">
+    <div class="fil-banner-head"><span class="flag inc">INCOMING</span><span class="mut">${FIL_INCOMING.length} items · ${FIL_INCOMING.reduce((s,x)=>s+x.kg,0)} kg · hover an item for its note</span></div>
+    <div class="fil-banner-rows">
+      <div class="fil-track">${row}</div>
+      <div class="fil-track rev">${row}</div>
+    </div>
+  </div>`;})();
   let html=tabHead('01','FILAMENT','inventory & pokeball colours')+filAlerts()+`<div class="stats">
     ${stat('On shelf',totKg.toFixed(2)+' kg',master.reduce((a,r)=>a+r.spools,0)+' spools')}
     ${stat('Value on shelf',eur(totKg),'at €'+EUR_PER_KG+'/kg','ok')}
