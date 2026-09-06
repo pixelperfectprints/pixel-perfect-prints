@@ -197,7 +197,7 @@ tr:hover td{background:var(--card2)}
   <input id="l-pass" type="password" placeholder="Password">
   <div class="err" id="lerr" style="display:none"></div>
   <button class="btn" onclick="doLogin()">Log in</button>
-  <p class="mut" style="margin-top:10px">First time? Set up your account: <a href="#" class="k" onclick="doSignup();return false">create it here</a> (uses the email + password above).</p>
+  <p class="mut" style="margin-top:10px">First time? <a href="#" class="k" onclick="doSignup();return false">create it here</a> (uses the email + password above).<br>Forgot your password? <a href="#" class="k" onclick="doReset();return false">email me a reset link</a>.</p>
 </div>
 <div id="setup" style="display:none">
   <h2>⚡ Firebase config needed</h2>
@@ -244,6 +244,15 @@ function doSignup(){
     .catch(err=>{e.textContent='⚠ '+err.message;e.style.display='block';});
 }
 function logout(){firebase.auth().signOut();}
+function doReset(){
+  const e=$('lerr');e.style.display='none';
+  const email=$('l-email').value.trim();
+  if(!email){e.textContent='⚠ Type your email above first, then click reset.';e.style.display='block';return;}
+  firebase.auth().sendPasswordResetEmail(email).then(()=>{
+    e.style.background='rgba(182,255,46,.1)';e.style.color='var(--ok)';
+    e.textContent='✓ Reset email sent to '+email+' — check your inbox (and spam).';e.style.display='block';
+  }).catch(err=>{e.textContent='⚠ '+err.message;e.style.display='block';});
+}
 function boot(cfg){
   firebase.initializeApp(cfg);
   db=firebase.database();storage=firebase.storage();
