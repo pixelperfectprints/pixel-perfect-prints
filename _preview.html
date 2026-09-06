@@ -228,7 +228,7 @@ tr:hover td{background:var(--card2)}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script>
 const LS='printops_cfg';let db=null,storage=null,state={filament:{},jobs:{},orders:{},notes:{},assign:{},files:{},products:{},enquiries:{}};
-const tab=()=>localStorage.getItem('printops_tab')||'filament';
+const tab=()=>'bot';
 const me=()=>{const e=firebase.auth().currentUser?.email||'';return /^james/i.test(e)?'James':'Jammin';};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
@@ -1164,11 +1164,12 @@ function render(){
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{localStorage.setItem('printops_tab',b.dataset.t);render();});
 
-/* ---------- start ---------- */
-const cfgRaw=localStorage.getItem(LS);
-if(cfgRaw){try{boot(JSON.parse(cfgRaw));}catch{localStorage.removeItem(LS);show('setup');}}
-else show('setup');
-
+/* ---------- start (PREVIEW MODE) ---------- */
+state={filament:{
+ "Desert Tan":{name:"Desert Tan",type:"PLA Matte",kg:0.2,spools:1,owner:"J",min:0.5,sw:"#c9a86c"},
+ "Lilac Purple":{name:"Lilac Purple",type:"PLA Matte",kg:0.6,spools:1,owner:"J",min:0.8,sw:"#9a6bc4"}
+},jobs:{},orders:{},notes:{},assign:{},files:{},products:{},enquiries:{},stock:{"Pikachu":{qty:27},"Mew (blue)":{qty:5}},fmoves:{},queue:{},costs:{},botlog:[],expenses:{}};
+show('hdr');render();
 </script>
 </body>
 </html>
