@@ -593,7 +593,7 @@ function renderJobs(){
     <div class="bar" style="margin-top:4px;margin-bottom:0">
       <input id="j-title" placeholder="What's printing (e.g. Gastly ball ×4)">
       <select id="j-printer" style="max-width:140px"><option value="">printer…</option>${PRINTERS.map(p=>`<option>${p}</option>`).join('')}</select>
-      <input id="j-eta" type="date" value="${today()}" style="max-width:150px" title="ETA">
+      <input id="j-eta" type="date" value="${today()}" style="max-width:150px" title="Target finish date (optional)">
       <button class="btn" onclick="addJob()">+ Log print</button>
     </div>
   </div>`;
@@ -601,7 +601,7 @@ function renderJobs(){
   html+='<div class="cards">'+prints.map(j=>`
     <div class="card" style="border-left:3px solid ${j.status==='done'?'var(--ok)':j.status==='printing'?'var(--acc)':'var(--bord)'}">
       <h3>${esc(j.title)}</h3>
-      <div class="meta">${esc(j.created||'')}${j.printer?' · <b>'+esc(j.printer)+'</b>':''}${j.eta?' · ETA '+esc(j.eta):''}</div>
+      <div class="meta">Logged ${esc(j.created||'')}${j.printer?' · <b>'+esc(j.printer)+'</b>':''}${j.eta&&j.status!=='done'?' · target '+esc(j.eta):''}</div>
       <div><span class="badge ${badge(j)}">${esc(j.status)}</span></div>
       <div class="actions">
         ${j.status!=='done'?`<button onclick="setJob('${j.id}','printing')">▶ printing</button><button onclick="setJob('${j.id}','done')">✔ done</button>`:''}
@@ -801,7 +801,7 @@ function renderOrders(){
   if(!rows.length)html+='<div class="empty">No orders/deliveries tracked.</div>';
   html+=rows.map(([id,o])=>`
     <div class="note"><b>${esc(o.what)}</b>
-      <div class="meta"><span><span class="badge ${o.status==='delivered'?'b-ok':o.status==='cancelled'?'b-bad':o.status==='incoming'?'b-warn':'b-info'}">${esc(o.status)}</span> ETA ${esc(o.eta||'—')}</span>
+      <div class="meta"><span><span class="badge ${o.status==='delivered'?'b-ok':o.status==='cancelled'?'b-bad':o.status==='incoming'?'b-warn':'b-info'}">${esc(o.status)}</span> Logged ${esc(o.created||o.eta||'—')}${o.eta&&o.status!=='delivered'&&o.created&&o.eta!==o.created?' · ETA '+esc(o.eta):''}</span>
       <span>${o.status!=='delivered'?`<button class="btn ghost" style="padding:3px 10px" onclick="setOrder('${id}','delivered')">mark delivered</button> `:''}<button class="btn ghost" style="padding:3px 10px" onclick="del('orders/${id}')">✕</button></span></div>
     </div>`).join('');
   return html;
@@ -1144,20 +1144,20 @@ function renderQueue(){
     ${PRINTERS.map(p=>{
       const active=perPrinter[p][0];
       return `<div class="panel" style="border-left:3px solid ${active?'var(--acc)':'var(--bord)'}"><h3>${p}</h3>
-        ${active?`<b>${esc(active.what)}</b><div class="muted" style="font-size:11.5px">ETA ${esc(active.eta||'—')} · ${esc(active.who||'')}</div>
+        ${active?`<b>${esc(active.what)}</b><div class="muted" style="font-size:11.5px">Logged ${esc(active.created||active.eta||'—')} · ${esc(active.who||'')}</div>
           <div class="actions"><button onclick="setQ('${active.id}','done')">✔ done</button></div>`
         :'<span class="flag ok">IDLE</span>'}
       </div>`;}).join('')}
   </div>
-  ${open.length?'<h3 style="margin:4px 0 10px">Queue</h3><div class="tbl-wrap"><table><thead><tr><th>What</th><th>Printer</th><th>Assigned</th><th>ETA</th><th>Status</th><th></th></tr></thead><tbody>'
-    +open.map(r=>`<tr><td><b>${esc(r.what)}</b></td><td>${esc(r.printer||'—')}</td><td>${esc(r.who||'')}</td><td>${esc(r.eta||'—')}</td>
+  ${open.length?'<h3 style="margin:4px 0 10px">Queue</h3><div class="tbl-wrap"><table><thead><tr><th>What</th><th>Printer</th><th>Assigned</th><th>Date logged</th><th>Status</th><th></th></tr></thead><tbody>'
+    +open.map(r=>`<tr><td><b>${esc(r.what)}</b></td><td>${esc(r.printer||'—')}</td><td>${esc(r.who||'')}</td><td>${esc(r.created||r.eta||'—')}</td>
     <td><span class="badge ${r.status==='printing'?'b-info':'b-warn'}">${esc(r.status)}</span></td>
     <td class="num">
       ${r.status==='queued'?`<button class="stbtn" onclick="setQ('${r.id}','printing')">▶ start</button>`:''}
       ${r.status==='printing'?`<button class="stbtn" onclick="setQ('${r.id}','done')">✔ done</button>`:''}
       <button class="stbtn" onclick="del('queue/${r.id}')">✕</button>
     </td></tr>`).join('')+'</tbody></table></div>':'<div class="empty">Queue is empty — add a print job above.</div>'}
-  ${done.length?`<details style="margin-top:10px"><summary>Completed (${done.length})</summary><div class="cards" style="margin-top:10px">${done.map(r=>`<div class="card"><b>${esc(r.what)}</b><div class="meta">${esc(r.printer||'')} · ${esc(r.eta||'')}</div></div>`).join('')}</div></details>`:''}`;
+  ${done.length?`<details style="margin-top:10px"><summary>Completed (${done.length})</summary><div class="cards" style="margin-top:10px">${done.map(r=>`<div class="card"><b>${esc(r.what)}</b><div class="meta">${esc(r.printer||'')} · Logged ${esc(r.created||r.eta||'')}</div></div>`).join('')}</div></details>`:''}`;
   return html;
 }
 window.addQ=()=>{
