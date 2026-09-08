@@ -317,11 +317,6 @@ const FIL_SEED=[
   {name:"Desert Tan",type:"PLA Matte",kg:0.20,spools:1,owner:"J",min:0.5,note:"Charizard belly ×15 needs ~440g — 200g will NOT cover it. Reorder (Bambu 11401).",sw:"#c9a86c"}
 ];
 const FIL_INCOMING=[
-  {name:"Ivory White",type:"Refill 1kg ×4",kg:4,code:"11100",note:"Eye/frame/part plates across all Christmas lines"},
-  {name:"Lemon Yellow",type:"Refill 1kg ×4",kg:4,code:"11400",note:"Deck boxes / Pikachu tails"},
-  {name:"Scarlet Red",type:"Refill 1kg ×2",kg:2,code:"11200",note:"Charmander/Charizard accents — tight until this lands"},
-  {name:"Charcoal",type:"Refill 1kg ×8",kg:8,code:"11101",note:"Heaviest consumer: 9× Charizard + Gastly/Gengar/Haunter parts"},
-  {name:"Silk+ Gold",type:"1kg spool",kg:1,code:"13405",note:"Deck box accents"},
   {name:"Desert Tan",type:"Refill 1kg ×3",kg:3,code:"11401",note:"Second order — top-up (gates Charizard/Charmander runs)"},
   {name:"Plum",type:"Refill 1kg ×1",kg:1,code:"11204",note:"Second order"},
   {name:"Sky Blue",type:"Refill 1kg ×1",kg:1,code:"11603",note:"Second order"},
@@ -387,10 +382,18 @@ window.filRecv=async(name,silent)=>{
   const INC=getIncoming();
   const item=INC.find(x=>x.name===name); if(!item)return;
   const id=String(name).replace(/[^\w ]/g,'');
-  const cur=(state.filament&&state.filament[id])||{};
+  // resolve the real DB key: exact match first, then fuzzy (seed names like
+  // "Charcoal" → record "Charcoal Black", "Silk+ Gold" → "Silk+ Gold")
+  const filKeys=Object.keys(state.filament||{});
+  let key=filKeys.find(k=>k===id)
+        ||filKeys.find(k=>k.toLowerCase().replace(/[^\w]/g,'')===id.toLowerCase().replace(/[^\w]/g,''))
+        ||filKeys.find(k=>k.toLowerCase().startsWith(id.toLowerCase().replace(/[^\w ]/g,'')))
+        ||id;
+  const cur=(state.filament&&state.filament[key])||{};
   const curKg=cur.kg!=null?+cur.kg:0, curSp=cur.spools!=null?+cur.spools:0;
   const newKg=Math.round((curKg+item.kg)*1000)/1000, newSp=curSp+Math.round(item.kg);
-  await upd('filament/'+id,{kg:newKg,spools:newSp,owner:'J',name:item.name,type:item.type||cur.type||'PLA Matte'});
+  await upd('filament/'+key,{kg:newKg,spools:newSp,owner:cur.owner||'J',name:cur.name||item.name,
+    type:cur.type||'PLA Matte',min:cur.min,sw:cur.sw,note:cur.note||''});
   if(!FIL_RECEIVED.includes(name))FIL_RECEIVED.push(name);
   localStorage.setItem('fil_received',JSON.stringify(FIL_RECEIVED));
   // if this came from a live order, mark it delivered
@@ -454,7 +457,7 @@ function renderFilament(){
   const incCard=`<div class="stat inc-card"><div class="k">Incoming</div><div class="v">${incKg} kg</div><div class="n">${INC.length} items · hover for detail</div>
     <div class="inc-pop">
       ${INC.map(x=>`<div class="inc-row">${FIL_RECEIVED.includes(x.name)?'<span class="flag ok" style="margin-right:6px">✓ received</span>':''}<span class="sw" style="background:${x.sw||'#00e5ff'}"></span><b>${esc(x.name)}</b> <span class="muted">${esc(x.type)}</span> · code ${x.code}<div class="inc-note">${esc(x.note)}</div>
-        ${FIL_RECEIVED.includes(x.name)?'':'<button class="btn ghost" style="padding:2px 8px;font-size:11px;margin-top:4px" onclick="filRecv(${JSON.stringify(x.name)})">✔ receive</button>'}</div>`).join('')}
+        ${FIL_RECEIVED.includes(x.name)?'':'<button class="btn ghost" style="padding:2px 8px;font-size:11px;margin-top:4px" onclick=\'filRecv(${JSON.stringify(x.name)})\'>✔ receive</button>'}</div>`).join('')}
       <div class="mut" style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">Order placed 03 Sep.
         <button class="btn ghost" style="padding:3px 10px;font-size:11px" onclick="filRecvAll()">✔ Receive all</button></div>
     </div></div>`;
