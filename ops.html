@@ -597,20 +597,52 @@ function renderJobs(){
       <button class="btn" onclick="addJob()">+ Log print</button>
     </div>
   </div>`;
-  if(!prints.length)html+='<div class="empty">No printer jobs yet.</div>';
-  html+='<div class="cards">'+prints.map(j=>`
-    <div class="card" style="border-left:3px solid ${j.status==='done'?'var(--ok)':j.status==='printing'?'var(--acc)':'var(--bord)'}">
-      <h3>${esc(j.title)}</h3>
-      <div class="meta">Logged ${esc(j.created||'')}${j.printer?' · <b>'+esc(j.printer)+'</b>':''}${j.eta&&j.status!=='done'?' · target '+esc(j.eta):''}</div>
-      <div><span class="badge ${badge(j)}">${esc(j.status)}</span></div>
-      <div class="actions">
-        ${j.status!=='done'?`<button onclick="setJob('${j.id}','printing')">▶ printing</button><button onclick="setJob('${j.id}','done')">✔ done</button>`:''}
-        ${j.status!=='on hold'&&j.status!=='done'?`<button onclick="setJob('${j.id}','on hold')">⏸ hold</button>`:''}
-        ${j.status==='done'?`<button onclick="setJob('${j.id}','queued')">↺ reopen</button>`:''}
-        <button class="danger" onclick="del('jobs/${j.id}')">✕</button>
-      </div></div>`).join('')+'</div>';
+  // filter bar (filament-style) — status / printer / logged-by, persisted in localStorage
+  const jget=(k,d)=>{try{return localStorage.getItem('job_'+k)||d}catch{return d}};
+  const curJStatus=jget('status','all'), curJPrinter=jget('printer','all'), curJBy=jget('by','all');
+  const jobLoggers=[...new Set(prints.map(j=>j.loggedBy).filter(Boolean))];
+  const jobPrinters=[...new Set(prints.map(j=>j.printer).filter(Boolean))];
+  const jFilter=(k,v)=>localStorage.setItem('job_'+k,v)||render();
+  const jDisp=prints.filter(j=>{
+    if(curJStatus!=='all'&&j.status!==curJStatus)return false;
+    if(curJPrinter!=='all'&&j.printer!==curJPrinter)return false;
+    if(curJBy!=='all'&&(j.loggedBy||'')!==curJBy)return false;
+    return true;
+  });
+  html+=`<div class="fil-filters">
+    <select onchange="jFilter('status',this.value)">
+      <option value="all" ${curJStatus==='all'?'selected':''}>Status: all</option>
+      ${['queued','printing','on hold','done'].map(s=>`<option value="${s}" ${curJStatus===s?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <select onchange="jFilter('printer',this.value)">
+      <option value="all" ${curJPrinter==='all'?'selected':''}>Printer: all</option>
+      ${jobPrinters.map(p=>`<option value="${esc(p)}" ${curJPrinter===p?'selected':''}>${esc(p)}</option>`).join('')}
+    </select>
+    <select onchange="jFilter('by',this.value)">
+      <option value="all" ${curJBy==='all'?'selected':''}>Logged by: all</option>
+      ${jobLoggers.map(b=>`<option value="${esc(b)}" ${curJBy===b?'selected':''}>${esc(b)}</option>`).join('')}
+    </select>
+    <span class="mut fil-count">${jDisp.length}/${prints.length} jobs</span>
+  </div>`;
+  window.jFilter=jFilter;
+  if(!jDisp.length)html+=prints.length?'<div class="empty">No jobs match those filters.</div>':'<div class="empty">No printer jobs yet.</div>';
+  if(jDisp.length)html+=`<div class="tbl-wrap"><table><thead><tr><th>Job</th><th>Printer</th><th>Status</th><th>Target</th><th>Logged</th><th>By</th><th></th></tr></thead><tbody>
+  ${jDisp.map(j=>`
+    <tr>
+      <td><b>${esc(j.title)}</b></td>
+      <td>${esc(j.printer||'—')}</td>
+      <td><span class="badge ${j.status==='done'?'b-ok':j.status==='printing'?'b-info':j.status==='on hold'?'':'b-warn'}">${esc(j.status)}</span></td>
+      <td>${j.eta&&j.status!=='done'?esc(j.eta):'—'}</td>
+      <td>${esc(j.created||'—')}</td>
+      <td>${j.loggedBy?`<span class="who ${j.loggedBy==='James'?'B':'J'}">${esc(j.loggedBy)}</span>`:'<span class="mut">—</span>'}</td>
+      <td class="num">
+        ${j.status!=='done'?`<button class="stbtn" onclick="setJob('${j.id}','printing')">▶</button><button class="stbtn" onclick="setJob('${j.id}','done')">✔</button><button class="stbtn" onclick="setJob('${j.id}','on hold')">⏸</button>`:`<button class="stbtn" onclick="setJob('${j.id}','queued')">↺</button>`}
+        <button class="stbtn" onclick="del('jobs/${j.id}')">✕</button>
+      </td>
+    </tr>`).join('')}
+  </tbody></table></div>`;
   if(doneP.length)html+=`<details style="margin-top:10px"><summary>Completed prints (${doneP.length})</summary><div class="cards" style="margin-top:10px">${doneP.map(j=>`
-    <div class="card"><h3>${esc(j.title)}</h3><div class="meta">${esc(j.created||'')}${j.printer?' · '+esc(j.printer):''}</div>
+    <div class="card"><h3>${esc(j.title)}</h3><div class="meta">Logged ${esc(j.created||'')}${j.printer?' · '+esc(j.printer):''}${j.loggedBy?' · by '+esc(j.loggedBy):''}</div>
     <div class="actions"><button onclick="setJob('${j.id}','queued')">↺ reopen</button><button class="danger" onclick="del('jobs/${j.id}')">✕</button></div></div>`).join('')}</div></details>`;
 
   // ---- TO-DOS ----
@@ -637,13 +669,13 @@ function renderJobs(){
 }
 window.addJob=()=>{
   const t=$('j-title').value.trim();if(!t)return alert('What are we printing, kid?');
-  add('jobs',{kind:'print',title:t,status:'queued',printer:$('j-printer').value||'',eta:$('j-eta').value,created:today()+' '+new Date().toTimeString().slice(0,5)});
+  add('jobs',{kind:'print',title:t,status:'queued',printer:$('j-printer').value||'',eta:$('j-eta').value,loggedBy:me(),created:today()+' '+new Date().toTimeString().slice(0,5)});
   $('j-title').value='';
 };
 window.setJob=(id,s)=>up('jobs/'+id,{status:s});
 window.addTodo=()=>{
   const t=$('t-title').value.trim();if(!t)return alert('Give the to-do a name.');
-  add('jobs',{kind:'todo',title:t,who:$('t-who').value,pri:$('t-pri').value,done:false,created:today()+' '+new Date().toTimeString().slice(0,5)});
+  add('jobs',{kind:'todo',title:t,who:$('t-who').value,pri:$('t-pri').value,done:false,loggedBy:me(),created:today()+' '+new Date().toTimeString().slice(0,5)});
   $('t-title').value='';
 };
 window.doneTodo=id=>up('jobs/'+id,{done:true,status:'done',doneDate:today()});
