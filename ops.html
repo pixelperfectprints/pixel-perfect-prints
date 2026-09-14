@@ -73,6 +73,11 @@ details select,details input{background:var(--card2);border:1px solid var(--bord
 #prodform textarea{height:60px;resize:vertical}
 #setup textarea{width:100%;height:110px;background:var(--card2);color:var(--fg);border:1px solid var(--bord);border-radius:8px;padding:10px;font-family:monospace;font-size:12px;margin:10px 0}
 /* calendar */
+.kgcell{cursor:pointer;position:relative;border-radius:4px;transition:.15s}
+.kgcell:hover{background:rgba(0,229,255,.10);box-shadow:inset 0 0 0 1px rgba(0,229,255,.35)}
+.kgcell .kgpen{opacity:0;font-size:10px;margin-left:5px;color:var(--cyan,#00e5ff)}
+.kgcell:hover .kgpen{opacity:.8}
+.kginp{width:70px;background:#16081f;border:1px solid var(--cyan,#00e5ff);color:#fff;border-radius:4px;padding:2px 5px;font-size:12px;font-family:inherit;text-align:right}
 .cal-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .cal-head h3{font-size:17px}
 .cal-nav{background:var(--card2);border:1px solid var(--bord);color:var(--cyan);border-radius:8px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:13px}
@@ -304,7 +309,7 @@ function boot(cfg){
     if(u){
       $('userbox').textContent=u.email+' ('+me()+')';
       show('hdr');
-      db.ref('ops').on('value',snap=>{state=Object.assign({filament:{},jobs:{},orders:{},notes:{},assign:{},files:{},products:{},enquiries:{},fmoves:{},queue:{},costs:{},botlog:[],expenses:{},cal:{}},snap.val()||{});render();filSeedOnce();},
+      db.ref('ops').on('value',snap=>{state=Object.assign({filament:{},jobs:{},orders:{},notes:{},assign:{},files:{},products:{},enquiries:{},fmoves:{},queue:{},costs:{},botlog:[],expenses:{},cal:{},received:{}},snap.val()||{});render();filSeedOnce();},
         err=>{const s=$('sync');s.textContent='⚠ '+err.message;s.className='sync err';});
       const s=$('sync');s.textContent='● live';s.className='sync on';
     } else show('login');
@@ -383,6 +388,7 @@ function getIncoming(){
   const orders=Object.values(state.orders||{}).filter(o=>o.status==='incoming'||o.status==='shipped');
   const out=[];
   const seen=new Set();
+  const REV=Object.assign({},state.received||{});   // DB-side received flags (shared, permanent)
   // live orders first — they carry colour + qty (1kg units)
   for(const o of orders){
     const col=o.colour||o.what;
@@ -400,8 +406,53 @@ function getIncoming(){
   for(const x of FIL_INCOMING){
     if(!seen.has(x.name.toLowerCase()))out.push(x);
   }
-  return out;
+  const isRec=o=>{
+    const k=String(o.name||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    if(REV[k])return true;
+    if(FIL_RECEIVED.includes(o.name))return true;   // legacy local flags
+    // an order-derived incoming item is gone once the order is delivered
+    return false;
+  };
+  return out.filter(x=>!isRec(x));
 }
+// resolve a display name to its real DB key in ops/filament
+function filKeyFor(name){
+  const id=String(name).replace(/[^\w ]/g,'');
+  const ks=Object.keys(state.filament||{});
+  return ks.find(k=>k===id)
+      || ks.find(k=>k.toLowerCase().replace(/[^\w]/g,'')===id.toLowerCase().replace(/[^\w]/g,''))
+      || ks.find(k=>k.toLowerCase().startsWith(id.toLowerCase().replace(/[^\w ]/g,'')))
+      || id;
+}
+window.filEditKg=function(td){
+  if(td.querySelector('input'))return;
+  const name=td.dataset.k, key=filKeyFor(name);
+  const cur=state.filament[key]||{};
+  const oldKg=+(cur.kg||0);
+  const html0=td.innerHTML;
+  td.innerHTML='<input class="kginp" type="number" step="0.01" min="0" value="'+oldKg.toFixed(2)+'">';
+  const inp=td.querySelector('input'); inp.focus(); inp.select();
+  let done=false;
+  const commit=async()=>{
+    if(done)return; done=true;
+    const nv=parseFloat(inp.value);
+    if(isNaN(nv)||nv<0){td.innerHTML=html0;return;}
+    const diff=Math.round((nv-oldKg)*1000)/1000;
+    if(diff!==0){
+      await upd('filament/'+key,{kg:nv,name:cur.name||name,spools:cur.spools||0,owner:cur.owner||'J',
+        type:cur.type||'PLA Matte',min:cur.min,sw:cur.sw,note:cur.note||''});
+      // audit trail
+      await add('fmoves',{type:diff>0?'adjust +':'adjust −',name:cur.name||name,
+        kg:Math.abs(diff),from:'manual edit',to:nv,who:me(),at:Date.now()});
+    }
+    render();
+  };
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();commit();}
+    if(e.key==='Escape'){done=true;td.innerHTML=html0;}
+  });
+  inp.addEventListener('blur',commit);
+};
 window.filRecv=async(name,silent)=>{
   // add incoming kg to the matching filament record (owner Jammin)
   const INC=getIncoming();
@@ -419,6 +470,9 @@ window.filRecv=async(name,silent)=>{
   const newKg=Math.round((curKg+item.kg)*1000)/1000, newSp=curSp+Math.round(item.kg);
   await upd('filament/'+key,{kg:newKg,spools:newSp,owner:cur.owner||'J',name:cur.name||item.name,
     type:cur.type||'PLA Matte',min:cur.min,sw:cur.sw,note:cur.note||''});
+  // persist to DB so both users lose the listing item, permanently
+  const rk=String(name).toLowerCase().replace(/[^a-z0-9]/g,'');
+  try{await upd('received/'+rk,{name:name,at:Date.now(),kg:item.kg}); }catch(e){}
   if(!FIL_RECEIVED.includes(name))FIL_RECEIVED.push(name);
   localStorage.setItem('fil_received',JSON.stringify(FIL_RECEIVED));
   // if this came from a live order, mark it delivered
@@ -432,6 +486,20 @@ window.filRecv=async(name,silent)=>{
   await add('fmoves',{d:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),who:'J',
     what:'received incoming — '+name+' (+'+item.kg+'kg)',amt:Math.round(item.kg*1000),ts:new Date().toISOString()});
   if(!silent){render();}
+};
+window.filUndo=async(k)=>{
+  const rec=(state.received||{})[k]; if(!rec)return;
+  if(!confirm('Undo receipt of '+rec.name+'? Removes '+rec.kg+'kg from stock and puts it back in the incoming list.'))return;
+  // remove from stock
+  const filKeys=Object.keys(state.filament||{});
+  const nid=String(rec.name).replace(/[^\w ]/g,'');
+  const fk=filKeys.find(x=>x===nid)||filKeys.find(x=>x.toLowerCase().replace(/[^\w]/g,'')===nid.toLowerCase().replace(/[^\w]/g,''));
+  if(fk){const cur=state.filament[fk];const nk=Math.max(0,Math.round(((+cur.kg||0)-rec.kg)*1000)/1000);
+    await upd('filament/'+fk,{kg:nk,spools:Math.max(0,(+cur.spools||0)-Math.round(rec.kg))});}
+  await del('received/'+k);
+  const ix=FIL_RECEIVED.indexOf(rec.name); if(ix>=0)FIL_RECEIVED.splice(ix,1);
+  localStorage.setItem('fil_received',JSON.stringify(FIL_RECEIVED));
+  render();
 };
 window.filRecvEl=function(el){const n=el.dataset.name;if(n)window.filRecv(n);};
 
@@ -479,6 +547,7 @@ function renderFilament(){
   const moves=Object.entries(state.fmoves||{}).map(([id,m])=>({id,...m})).sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
   const showMoves=moves.length?moves:FIL_SEED_MOVES.map((m,i)=>({id:'seed'+i,...m}));
   const stocked=master.filter(r=>r.kg>0);
+  const RECV_LOG=Object.values(state.received||{}).sort((a,b)=>(b.at||0)-(a.at||0));
   const INC=getIncoming();
   const incKg=INC.reduce((a,x)=>a+x.kg,0);
   const incRowHTML=(x)=>'<div class="inc-row">'
@@ -493,6 +562,7 @@ incCard=`<div class="stat inc-card"><div class="k">Incoming</div><div class="v">
       ${INC.map(incRowHTML).join('')}
       <div class="mut" style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">Order placed 03 Sep.
         <button class="btn ghost" style="padding:3px 10px;font-size:11px" onclick="filRecvAll()">✔ Receive all</button></div>
+      ${RECV_LOG.length?'<div style="margin-top:10px;border-top:1px solid var(--bord);padding-top:8px"><div class="mut" style="font-size:10px;letter-spacing:1px;margin-bottom:4px">RECEIVED — CLICK × TO UNDO</div>'+RECV_LOG.slice(0,6).map(r=>'<div class="inc-row" style="opacity:.65"><span class="sw" style="background:'+(r.sw||'#00e5ff')+'"></span><b>'+esc(r.name)+'</b> <span class="muted">+'+r.kg+'kg</span> <button class="btn ghost" style="padding:1px 7px;font-size:11px;margin-left:auto" onclick="filUndo(\''+r.k+'\')">×</button></div>').join('')+'</div>':''}
     </div></div>`;
 const lowCard=`<div class="stat low-card"><div class="k">Low</div><div class="v">${lowAll}</div><div class="n">below reorder floor · hover for detail</div>
     <div class="inc-pop">
@@ -544,7 +614,7 @@ const lowCard=`<div class="stat low-card"><div class="k">Low</div><div class="v"
       ${pbFor(r.name)?`<div class="pb-pop">${pbFor(r.name).map(b=>`<div class="pb-row">${esc(b)}</div>`).join('')}</div>`:''}
     </td>
     <td>${whoBadge(r)}</td>
-    <td class="num"><b>${(+r.kg||0).toFixed(2)}</b></td>
+    <td class="num kgcell" data-k="${esc(r.name)}" onclick="filEditKg(this)" title="Click to set exact kg">${(+r.kg||0).toFixed(2)}<span class="kgpen">✎</span></td>
     <td><span class="lvbar"><i style="width:${Math.min(100,(r.kg||0)/maxKg*100)}%;background:${lvlColor(r)}"></i></span></td>
     <td class="num">${r.spools||0}</td>
     <td>${flag(r)}</td>
