@@ -407,11 +407,9 @@ function getIncoming(){
     if(!seen.has(x.name.toLowerCase()))out.push(x);
   }
   const isRec=o=>{
+    if(o.order)return false;   // order-derived items vanish when their order is delivered
     const k=String(o.name||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-    if(REV[k])return true;
-    if(FIL_RECEIVED.includes(o.name))return true;   // legacy local flags
-    // an order-derived incoming item is gone once the order is delivered
-    return false;
+    return !!REV[k];           // seed item: cleared once received (shared in DB)
   };
   return out.filter(x=>!isRec(x));
 }
@@ -456,7 +454,16 @@ window.filEditKg=function(td){
 window.filRecv=async(name,silent)=>{
   // add incoming kg to the matching filament record (owner Jammin)
   const INC=getIncoming();
-  const item=INC.find(x=>x.name===name); if(!item)return;
+  let item=INC.find(x=>x.name===name);
+  if(!item){
+    // fallback: catalogue / seed lookup, so a hidden or already-filtered line can still be received
+    const meta=(typeof FIL_CATALOG!=='undefined'?FIL_CATALOG.find(c=>c.name.toLowerCase()===String(name).toLowerCase()):null)
+      ||(typeof FIL_EXTRA!=='undefined'?FIL_EXTRA.find(c=>c.name.toLowerCase()===String(name).toLowerCase()):null)
+      ||(typeof FIL_INCOMING!=='undefined'?FIL_INCOMING.find(x=>x.name.toLowerCase()===String(name).toLowerCase()):null);
+    if(meta) item={name:meta.name,kg:+meta.kg||1,type:meta.series||meta.type||'PLA Matte',
+                    code:meta.code||'—',note:'received (not in listing)'};
+  }
+  if(!item){ alert('⚠ Could not receive "'+name+'" — not found in incoming or catalogue.'); return; }
   const id=String(name).replace(/[^\w ]/g,'');
   // resolve the real DB key: exact match first, then fuzzy (seed names like
   // "Charcoal" → record "Charcoal Black", "Silk+ Gold" → "Silk+ Gold")
@@ -485,7 +492,17 @@ window.filRecv=async(name,silent)=>{
   }
   await add('fmoves',{d:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),who:'J',
     what:'received incoming — '+name+' (+'+item.kg+'kg)',amt:Math.round(item.kg*1000),ts:new Date().toISOString()});
-  if(!silent){render();}
+  if(!silent){render(); toast('✔ Received '+name+' +'+item.kg+'kg');}
+};
+window.toast=function(msg){
+  let t=document.getElementById('__toast');
+  if(!t){t=document.createElement('div');t.id='__toast';
+    t.style.cssText='position:fixed;bottom:18px;right:18px;z-index:9999;background:#0e2a33;color:#00e5ff;'
+      +'border:1px solid #00e5ff;border-radius:8px;padding:10px 16px;font-size:13px;'
+      +'box-shadow:0 6px 24px rgba(0,0,0,.5);transition:opacity .3s;max-width:340px';
+    document.body.appendChild(t);}
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(window.__tt); window.__tt=setTimeout(()=>{t.style.opacity='0';},2600);
 };
 window.filUndo=async(k)=>{
   const rec=(state.received||{})[k]; if(!rec)return;
