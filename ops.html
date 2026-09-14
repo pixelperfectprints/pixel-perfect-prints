@@ -78,6 +78,9 @@ details select,details input{background:var(--card2);border:1px solid var(--bord
 .kgcell .kgpen{opacity:0;font-size:10px;margin-left:5px;color:var(--cyan,#00e5ff)}
 .kgcell:hover .kgpen{opacity:.8}
 .kginp{width:70px;background:#16081f;border:1px solid var(--cyan,#00e5ff);color:#fff;border-radius:4px;padding:2px 5px;font-size:12px;font-family:inherit;text-align:right}
+.notecell{cursor:pointer;border-radius:4px;transition:.15s}
+.notecell:hover{background:rgba(0,229,255,.10);box-shadow:inset 0 0 0 1px rgba(0,229,255,.35)}
+.noteinp{width:96%;background:#16081f;border:1px solid var(--cyan,#00e5ff);color:#fff;border-radius:4px;padding:3px 6px;font-size:12px;font-family:inherit;resize:vertical}
 .cal-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .cal-head h3{font-size:17px}
 .cal-nav{background:var(--card2);border:1px solid var(--bord);color:var(--cyan);border-radius:8px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:13px}
@@ -451,6 +454,29 @@ window.filEditKg=function(td){
   });
   inp.addEventListener('blur',commit);
 };
+window.filEditNote=function(td){
+  if(td.querySelector('textarea')||td.querySelector('input'))return;
+  const name=td.dataset.k, key=filKeyFor(name);
+  const cur=state.filament[key]||{};
+  const oldNote=String(cur.note||'');
+  const html0=td.innerHTML;
+  td.innerHTML='<textarea class="noteinp" rows="2">'+oldNote.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea>';
+  const inp=td.querySelector('textarea'); inp.focus(); inp.select();
+  let done=false;
+  const commit=async()=>{
+    if(done)return; done=true;
+    const nv=inp.value.trim();
+    if(nv===oldNote){td.innerHTML=html0;return;}
+    await upd('filament/'+key,{note:nv,name:cur.name||name,kg:cur.kg,spools:cur.spools||0,
+      owner:cur.owner||'J',type:cur.type||'PLA Matte',min:cur.min,sw:cur.sw});
+    render();
+  };
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();commit();}
+    if(e.key==='Escape'){done=true;td.innerHTML=html0;}
+  });
+  inp.addEventListener('blur',commit);
+};
 window.filRecv=async(name,silent)=>{
   // add incoming kg to the matching filament record (owner Jammin)
   const INC=getIncoming();
@@ -622,7 +648,7 @@ const lowCard=`<div class="stat low-card"><div class="k">Low</div><div class="v"
   </div>
   ${filterBar}
   <div class="tbl-wrap"><table><thead><tr>
-    <th>Colour / Type</th><th>Owner</th><th style="text-align:right">kg on shelf</th><th>Level</th><th style="text-align:right">Spools</th><th>Status</th><th>Notes</th>
+    <th>Colour / Type</th><th>Owner</th><th style="text-align:right">kg on shelf</th><th>Level</th><th>Status</th><th>Notes</th>
   </tr></thead><tbody>
   ${disp.map(r=>`<tr>
     <td class="pbcell" ${(()=>{const pb=pbFor(r.name);return pb?`data-pb="${esc(pb.join('|'))}"`:''})()}>
@@ -633,9 +659,9 @@ const lowCard=`<div class="stat low-card"><div class="k">Low</div><div class="v"
     <td>${whoBadge(r)}</td>
     <td class="num kgcell" data-k="${esc(r.name)}" onclick="filEditKg(this)" title="Click to set exact kg">${(+r.kg||0).toFixed(2)}<span class="kgpen">✎</span></td>
     <td><span class="lvbar"><i style="width:${Math.min(100,(r.kg||0)/maxKg*100)}%;background:${lvlColor(r)}"></i></span></td>
-    <td class="num">${r.spools||0}</td>
+    
     <td>${flag(r)}</td>
-    <td class="muted" style="white-space:normal;max-width:300px">${esc(r.note||'')}</td>
+    <td class="muted notecell" data-k="${esc(r.name)}" onclick="filEditNote(this)" title="Click to edit note" style="white-space:normal;max-width:300px">${esc(r.note||'')}<span class="kgpen">✎</span></td>
   </tr>`).join('')}
   </tbody></table></div>
   ${incBanner}
