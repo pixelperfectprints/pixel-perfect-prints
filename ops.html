@@ -16,6 +16,12 @@
   --acc:#00e5ff; --ok:#b6ff2e; --warn:#ffd12e; --bad:#ff2e5c;
   --neon:#ff2ea6;
   --grad:linear-gradient(92deg,#ff2ea6,#7a2eff 55%,#00e5ff);
+  --cyan:#00e5ff;
+  /* --- person colour codes (site-wide identity) --- */
+  --p-jammin:#ff2ea6;
+  --p-james:#00e5ff;
+  --p-ben:#9d6bff;
+  --p-unknown:#9a8fc4;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--fg);font-family:'Rajdhani',system-ui,sans-serif;font-size:15.5px;padding-bottom:60px}
@@ -122,9 +128,14 @@ tr:hover td{background:var(--card2)}
 .lvbar{width:80px;height:6px;background:#241a4d;border-radius:3px;display:inline-block;overflow:hidden;vertical-align:middle}
 .lvbar i{display:block;height:100%;border-radius:3px}
 .who{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
-.who.J{background:rgba(0,229,255,.13);color:var(--cyan)}
-.who.B{background:rgba(255,46,166,.13);color:var(--neon)}
-.who.S{background:rgba(154,143,196,.15);color:var(--mut)}
+.who.J,.who.Jammin{background:rgba(255,46,166,.16);color:var(--p-jammin)}
+.who.B,.who.James{background:rgba(0,229,255,.15);color:var(--p-james)}
+.who.Ben{background:rgba(157,107,255,.18);color:var(--p-ben)}
+.who.S{background:rgba(154,143,196,.15);color:var(--p-unknown)}
+.who-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.who-key{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0 2px}
+.who-key span{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;color:var(--mut)}
+.who-key i{width:12px;height:12px;border-radius:50%;display:inline-block}
 .flag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
 .flag.ok{background:rgba(182,255,46,.13);color:var(--ok)}
 .flag.low{background:rgba(255,209,46,.13);color:var(--warn)}
@@ -266,6 +277,26 @@ tr:hover td{background:var(--card2)}
 const LS='printops_cfg';let db=null,storage=null,state={filament:{},jobs:{},orders:{},notes:{},assign:{},files:{},products:{},enquiries:{}};
 const tab=()=>localStorage.getItem('printops_tab')||'filament';
 const me=()=>{const e=firebase.auth().currentUser?.email||'';return /^james/i.test(e)?'James':'Jammin';};
+/* ---------- people & colour codes (one identity colour per person, site-wide) ---------- */
+const PEOPLE={
+  Jammin:{c:'var(--p-jammin)',hex:'#ff2ea6'},
+  James: {c:'var(--p-james)', hex:'#00e5ff'},
+  Ben:   {c:'var(--p-ben)',   hex:'#9d6bff'}
+};
+function whoKey(n){
+  const s=String(n==null?'':n).trim().toLowerCase();
+  if(!s)return null;
+  if(s.startsWith('jame'))return 'James';
+  if(s.startsWith('jamm'))return 'Jammin';
+  if(s==='j')return 'Jammin';
+  if(s==='b')return 'James';      // owner key B = James (matches WHO_NAME)
+  if(s.startsWith('ben'))return 'Ben';
+  return null;
+}
+function whoColor(n){const k=whoKey(n);return k?PEOPLE[k].c:'var(--p-unknown)';}
+function whoName(n){return whoKey(n)||'unassigned';}
+function whoDot(n){return '<i class="who-dot" style="background:'+whoColor(n)+'"></i>';}
+function whoChip(n){const k=whoKey(n);return '<span class="who '+(k||'S')+'">'+(k||'unassigned')+'</span>';}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
 const $=id=>document.getElementById(id);
@@ -803,14 +834,14 @@ function renderJobs(){
   </div>`;
   if(!openT.length)html+='<div class="empty">Nothing open — either you\'re on top of it or you forgot everything.</div>';
   else html+=openT.map(j=>`
-    <div class="note" style="border-left:3px solid ${j.pri==='high'?'var(--bad)':j.pri==='low'?'var(--bord)':'var(--warn)'}">
+    <div class="note" style="border-left:3px solid ${whoColor(j.who)}">
       <b>${esc(j.title)}</b>
-      <div class="meta"><span><span class="badge ${j.pri==='high'?'b-bad':j.pri==='low'?'':'b-warn'}">${esc(j.pri||'normal')}</span> for <b>${esc(j.who||'—')}</b> · ${esc(j.created||'')}</span>
+      <div class="meta"><span><span class="badge ${j.pri==='high'?'b-bad':j.pri==='low'?'':'b-warn'}">${esc(j.pri||'normal')}</span> for ${whoChip(j.who)} · ${esc(j.created||'')}</span>
       <span><button class="btn ghost" style="padding:3px 10px" onclick="doneTodo('${j.id}')">✔ done</button> <button class="btn ghost" style="padding:3px 10px" onclick="del('jobs/${j.id}')">✕</button></span></div>
     </div>`).join('');
   if(doneT.length)html+=`<details style="margin-top:10px"><summary>Done to-dos (${doneT.length})</summary>${doneT.map(j=>`
     <div class="note" style="opacity:.65"><b style="text-decoration:line-through">${esc(j.title)}</b>
-    <div class="meta"><span>${esc(j.who||'')}</span><span>${esc(j.doneDate||'')} <button class="btn ghost" style="padding:2px 8px" onclick="del('jobs/${j.id}')">✕</button></span></div></div>`).join('')}</details>`;
+    <div class="meta"><span>${whoChip(j.who)}</span><span>${esc(j.doneDate||'')} <button class="btn ghost" style="padding:2px 8px" onclick="del('jobs/${j.id}')">✕</button></span></div></div>`).join('')}</details>`;
   return html;
 }
 window.addJob=()=>{
@@ -1622,8 +1653,14 @@ function renderCal(){
       const evsToday=(byDate[k]||[]);
       return `<div class="cal-cell ${k===todayKey?'today':''}" onclick="calPreFill('${k}')">
         <div class="cal-day">${i+1}</div>
-        ${evsToday.map(e=>`<div class="cal-ev cal-p-${e.done?'done':e.pri||'med'}" title="${esc(e.what||'')}" onclick="event.stopPropagation();calToggle('${e.id}')">${e.spanStart?'▶ ':''}${esc(e.what||'')}</div>`).join('')}
+        ${evsToday.map(e=>`<div class="cal-ev cal-p-${e.done?'done':e.pri||'med'}" style="border-left:4px solid ${whoColor(e.who)}" title="${whoName(e.who)} · ${esc(e.what||'')}" onclick="event.stopPropagation();calToggle('${e.id}')">${whoDot(e.who)}${e.spanStart?'▶ ':''}${esc(e.what||'')}</div>`).join('')}
       </div>`;}).join('')}
+  </div>
+  <div class="who-key">
+    <span><i style="background:var(--p-jammin)"></i> Jammin</span>
+    <span><i style="background:var(--p-james)"></i> James</span>
+    <span><i style="background:var(--p-ben)"></i> Ben</span>
+    <span><i style="background:var(--p-unknown)"></i> unassigned</span>
   </div>
   <div class="cal-leg">
     <span><i style="background:rgba(255,46,92,.5)"></i> high priority</span>
@@ -1637,7 +1674,7 @@ function renderCal(){
   if(soon.length){
     html+=`<div class="panel" style="margin-top:14px"><h3>Next up</h3>${soon.map(([id,e])=>`
       <div class="mv"><span class="when">${esc(e.start)}${e.end&&e.end!==e.start?'→'+esc(e.end):''}</span>
-      <span class="what"><span class="who ${e.pri==='high'?'B':e.pri==='low'?'S':'J'}">${esc(e.pri||'med')}</span>${esc(e.what)}</span>
+      <span class="what"><span class="who ${whoKey(e.who)||'S'}">${whoName(e.who)}</span>${esc(e.what)} <span class="mut" style="font-size:11px">(${esc(e.pri||'med')})</span></span>
       <button class="stbtn" onclick="calToggle('${id}')">✔</button></div>`).join('')}</div>`;
   }
   return html;
@@ -1653,7 +1690,7 @@ window.addCal=()=>{
   const start=$('c-start').value;if(!start)return alert('Pick a start date.');
   const end=$('c-end').value;
   if(end&&end<start)return alert('End date is before the start date — fix that.');
-  add('cal',{what,start,end:end||'',pri:$('c-pri').value,done:false,created:today()+' '+new Date().toTimeString().slice(0,5)});
+  add('cal',{what,start,end:end||'',pri:$('c-pri').value,done:false,who:me(),created:today()+' '+new Date().toTimeString().slice(0,5)});
   $('c-what').value='';
 };
 
