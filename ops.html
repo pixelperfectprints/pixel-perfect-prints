@@ -433,6 +433,8 @@ window.filRecv=async(name,silent)=>{
     what:'received incoming — '+name+' (+'+item.kg+'kg)',amt:Math.round(item.kg*1000),ts:new Date().toISOString()});
   if(!silent){render();}
 };
+window.filRecvEl=function(el){const n=el.dataset.name;if(n)window.filRecv(n);};
+
 function renderFilament(){
   const fget=(k,d)=>{try{return localStorage.getItem(k)||d}catch{return d}};
   const curOwner=fget('fil_owner','all'), curSeries=fget('fil_series','all'), curStatus=fget('fil_status','all');
@@ -479,14 +481,20 @@ function renderFilament(){
   const stocked=master.filter(r=>r.kg>0);
   const INC=getIncoming();
   const incKg=INC.reduce((a,x)=>a+x.kg,0);
-  const incCard=`<div class="stat inc-card"><div class="k">Incoming</div><div class="v">${incKg} kg</div><div class="n">${INC.length} items · hover for detail</div>
+  const incRowHTML=(x)=>'<div class="inc-row">'
+  +(FIL_RECEIVED.includes(x.name)?'<span class="flag ok" style="margin-right:6px">✓ received</span>':'')
+  +'<span class="sw" style="background:'+(x.sw||'#00e5ff')+'"></span><b>'+esc(x.name)+'</b> '
+  +'<span class="muted">'+esc(x.type)+'</span> · code '+esc(x.code)
+  +'<div class="inc-note">'+esc(x.note)+'</div>'
+  +(FIL_RECEIVED.includes(x.name)?'':'<button class="btn ghost" data-name="'+esc(x.name)+'" onclick="filRecvEl(this)" style="padding:2px 8px;font-size:11px;margin-top:4px">✔ receive</button>')
+  +'</div>';
+incCard=`<div class="stat inc-card"><div class="k">Incoming</div><div class="v">${incKg} kg</div><div class="n">${INC.length} items · hover for detail</div>
     <div class="inc-pop">
-      ${INC.map(x=>`<div class="inc-row">${FIL_RECEIVED.includes(x.name)?'<span class="flag ok" style="margin-right:6px">✓ received</span>':''}<span class="sw" style="background:${x.sw||'#00e5ff'}"></span><b>${esc(x.name)}</b> <span class="muted">${esc(x.type)}</span> · code ${x.code}<div class="inc-note">${esc(x.note)}</div>
-        ${FIL_RECEIVED.includes(x.name)?'':'<button class="btn ghost" style="padding:2px 8px;font-size:11px;margin-top:4px" onclick=\'filRecv(${JSON.stringify(x.name)})\'>✔ receive</button>'}</div>`).join('')}
+      ${INC.map(incRowHTML).join('')}
       <div class="mut" style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">Order placed 03 Sep.
         <button class="btn ghost" style="padding:3px 10px;font-size:11px" onclick="filRecvAll()">✔ Receive all</button></div>
     </div></div>`;
-  const lowCard=`<div class="stat low-card"><div class="k">Low</div><div class="v">${lowAll}</div><div class="n">below reorder floor · hover for detail</div>
+const lowCard=`<div class="stat low-card"><div class="k">Low</div><div class="v">${lowAll}</div><div class="n">below reorder floor · hover for detail</div>
     <div class="inc-pop">
       ${lowAll?master.filter(r=>r.kg>0&&r.kg<r.min).map(r=>`<div class="inc-row"><span class="sw" style="background:${r.sw}"></span><b>${esc(r.name)}</b> <span class="mut">${(+r.kg||0).toFixed(2)}kg / floor ${r.min}kg</span></div>`).join(''):'<div class="muted">Nothing low — shelf looks healthy.</div>'}
     </div></div>`;
