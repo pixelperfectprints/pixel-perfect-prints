@@ -72,7 +72,31 @@ details select,details input{background:var(--card2);border:1px solid var(--bord
 #prodform input,#prodform textarea{width:100%;background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:8px;border-radius:8px;font-size:14px;font-family:'Rajdhani'}
 #prodform textarea{height:60px;resize:vertical}
 #setup textarea{width:100%;height:110px;background:var(--card2);color:var(--fg);border:1px solid var(--bord);border-radius:8px;padding:10px;font-family:monospace;font-size:12px;margin:10px 0}
+/* calendar */
+.cal-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.cal-head h3{font-size:17px}
+.cal-nav{background:var(--card2);border:1px solid var(--bord);color:var(--cyan);border-radius:8px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:13px}
+.cal-nav:hover{border-color:var(--cyan)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-dow{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;text-align:center;padding:4px 0;font-weight:700}
+.cal-cell{background:var(--card);border:1px solid var(--bord);border-radius:9px;min-height:86px;padding:6px;font-size:11px;position:relative}
+.cal-cell.out{opacity:.35}
+.cal-cell.today{border-color:var(--cyan);box-shadow:0 0 10px rgba(0,229,255,.25)}
+.cal-day{font-weight:700;font-size:12px;margin-bottom:4px}
+.cal-ev{border-radius:6px;padding:3px 5px;margin-top:3px;font-weight:600;font-size:10.5px;line-height:1.3;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-ev:hover{white-space:normal}
+.cal-p-high{background:rgba(255,46,92,.18);border-left:3px solid var(--bad);color:#ffb3c1}
+.cal-p-med{background:rgba(255,209,46,.13);border-left:3px solid var(--warn);color:#ffe28a}
+.cal-p-low{background:rgba(0,229,255,.1);border-left:3px solid var(--cyan);color:#9fe8ff}
+.cal-p-done{background:rgba(182,255,46,.1);border-left:3px solid var(--ok);color:#d6ff8a;text-decoration:line-through}
+.cal-leg{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.cal-leg span{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;color:var(--mut)}
+.cal-leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+#cal-form{display:grid;grid-template-columns:1.6fr .9fr .9fr 1fr auto;gap:8px;align-items:center}
+#cal-form input,#cal-form select{background:var(--card2);border:1px solid var(--bord);color:var(--fg);padding:8px 10px;border-radius:8px;font-size:13px;font-family:'Rajdhani';font-weight:500}
+#cal-form input:focus,#cal-form select:focus{outline:none;border-color:var(--cyan)}
 @media(max-width:600px){.cards{grid-template-columns:1fr}#prodform{grid-template-columns:1fr}}
+@media(max-width:800px){#cal-form{grid-template-columns:1fr 1fr}.cal-grid{gap:3px}.cal-cell{min-height:64px;padding:4px}}
 
 /* filament table dashboard */
 .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
@@ -198,6 +222,7 @@ tr:hover td{background:var(--card2)}
     <button data-t="costs">Costs</button>
     <button data-t="bot">Bot</button>
     <button data-t="queue">Queue</button>
+    <button data-t="cal">Calendar</button>
     <button data-t="products">Products</button>
     <button data-t="enquiries">Enquiries</button>
     <button data-t="orders">Orders</button>
@@ -279,7 +304,7 @@ function boot(cfg){
     if(u){
       $('userbox').textContent=u.email+' ('+me()+')';
       show('hdr');
-      db.ref('ops').on('value',snap=>{state=Object.assign({filament:{},jobs:{},orders:{},notes:{},assign:{},files:{},products:{},enquiries:{},fmoves:{},queue:{},costs:{},botlog:[],expenses:{}},snap.val()||{});render();filSeedOnce();},
+      db.ref('ops').on('value',snap=>{state=Object.assign({filament:{},jobs:{},orders:{},notes:{},assign:{},files:{},products:{},enquiries:{},fmoves:{},queue:{},costs:{},botlog:[],expenses:{},cal:{}},snap.val()||{});render();filSeedOnce();},
         err=>{const s=$('sync');s.textContent='⚠ '+err.message;s.className='sync err';});
       const s=$('sync');s.textContent='● live';s.className='sync on';
     } else show('login');
@@ -1416,8 +1441,103 @@ render=function(){
   }
 };
 
+
+/* ---------- calendar: job priority planning ---------- */
+const CAL_DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+let calCursor=null; // Date of first of visible month
+function calYm(){if(!calCursor){const n=new Date();calCursor=new Date(n.getFullYear(),n.getMonth(),1);}return calCursor;}
+function calKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function renderCal(){
+  const evs=state.cal||{};
+  const base=calYm();
+  const y=base.getFullYear(), m=base.getMonth();
+  const first=new Date(y,m,1);
+  const startOffset=(first.getDay()+6)%7; // Monday=0
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const todayKey=calKey(new Date());
+  const monthName=base.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  // group events by date (support start/end ranges)
+  const byDate={};
+  Object.entries(evs).forEach(([id,e])=>{
+    if(!e.start)return;
+    const s=new Date(e.start+'T00:00:00');
+    const eEnd=e.end?new Date(e.end+'T00:00:00'):s;
+    for(let d=new Date(s);d<=eEnd;d.setDate(d.getDate()+1)){
+      const k=calKey(d);
+      (byDate[k]=byDate[k]||[]).push({id,...e,spanStart:calKey(d)===e.start});
+    }
+  });
+  
+  const allEv=Object.entries(evs);
+  const openEv=allEv.filter(([,e])=>!e.done);
+  const upcoming=openEv.filter(([,e])=>e.start>=todayKey).length;
+  const stat=(k,v,n,cls='')=>`<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  let html=tabHead('14','CALENDAR','plan job priorities by week')+`<div class="stats">
+    ${stat('Planned blocks',allEv.length,openEv.length+' active')}
+    ${stat('Starting ahead',upcoming,'future-dated','ok')}
+    ${stat('This month',Object.keys(byDate).filter(k=>k.startsWith(calKey(base).slice(0,7))).length,'days with plans')}
+  </div>
+  <div class="card" style="margin-bottom:14px"><h3>Add / plan a block</h3>
+    <div id="cal-form" style="margin-top:10px">
+      <input id="c-what" placeholder="What (e.g. Pokeballs run — all 8 printers)">
+      <input id="c-start" type="date" value="${today()}">
+      <input id="c-end" type="date" title="End date (optional — for multi-day blocks)">
+      <select id="c-pri"><option value="med">priority: normal</option><option value="high">priority: high</option><option value="low">priority: low</option></select>
+      <button class="btn" onclick="addCal()">+ Plan</button>
+    </div>
+  </div>
+  <div class="cal-head">
+    <button class="cal-nav" onclick="calMove(-1)">‹ prev</button>
+    <h3>${monthName}</h3>
+    <button class="cal-nav" onclick="calMove(1)">next ›</button>
+    <button class="cal-nav" onclick="calCursor=null;render()">today</button>
+    <span class="sub mut">click an entry to mark done · click date numbers to pre-fill</span>
+  </div>
+  <div class="cal-grid">
+    ${CAL_DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+    ${Array(startOffset).fill('<div class="cal-cell out"></div>').join('')}
+    ${Array.from({length:daysInMonth},(_,i)=>{
+      const d=new Date(y,m,i+1);const k=calKey(d);
+      const evsToday=(byDate[k]||[]);
+      return `<div class="cal-cell ${k===todayKey?'today':''}" onclick="calPreFill('${k}')">
+        <div class="cal-day">${i+1}</div>
+        ${evsToday.map(e=>`<div class="cal-ev cal-p-${e.done?'done':e.pri||'med'}" title="${esc(e.what||'')}" onclick="event.stopPropagation();calToggle('${e.id}')">${e.spanStart?'▶ ':''}${esc(e.what||'')}</div>`).join('')}
+      </div>`;}).join('')}
+  </div>
+  <div class="cal-leg">
+    <span><i style="background:rgba(255,46,92,.5)"></i> high priority</span>
+    <span><i style="background:rgba(255,209,46,.4)"></i> normal</span>
+    <span><i style="background:rgba(0,229,255,.35)"></i> low</span>
+    <span><i style="background:rgba(182,255,46,.35)"></i> done</span>
+    <span class="mut">▶ = block start · multi-day blocks repeat each day</span>
+  </div>`;
+  // upcoming list
+  const soon=allEv.filter(([,e])=>!e.done&&e.start>=todayKey).sort((a,b)=>a[1].start.localeCompare(b[1].start)).slice(0,8);
+  if(soon.length){
+    html+=`<div class="panel" style="margin-top:14px"><h3>Next up</h3>${soon.map(([id,e])=>`
+      <div class="mv"><span class="when">${esc(e.start)}${e.end&&e.end!==e.start?'→'+esc(e.end):''}</span>
+      <span class="what"><span class="who ${e.pri==='high'?'B':e.pri==='low'?'S':'J'}">${esc(e.pri||'med')}</span>${esc(e.what)}</span>
+      <button class="stbtn" onclick="calToggle('${id}')">✔</button></div>`).join('')}</div>`;
+  }
+  return html;
+}
+window.calMove=d=>{const c=calYm();calCursor=new Date(c.getFullYear(),c.getMonth()+d,1);render();};
+window.calPreFill=k=>{$('c-start').value=k;$('c-what').focus();};
+window.calToggle=id=>{
+  const e=state.cal[id];if(!e)return;
+  upd('cal/'+id,{done:!e.done}).catch(err=>alert('Save failed: '+err.message));
+};
+window.addCal=()=>{
+  const what=$('c-what').value.trim();if(!what)return alert('What are we planning, kid?');
+  const start=$('c-start').value;if(!start)return alert('Pick a start date.');
+  const end=$('c-end').value;
+  if(end&&end<start)return alert('End date is before the start date — fix that.');
+  add('cal',{what,start,end:end||'',pri:$('c-pri').value,done:false,created:today()+' '+new Date().toTimeString().slice(0,5)});
+  $('c-what').value='';
+};
+
 /* ---------- shell ---------- */
-const RENDERS={filament:renderFilament,jobs:renderJobs,assign:renderAssign,files:renderFiles,stock:renderStock,products:renderProducts,enquiries:renderEnquiries,orders:renderOrders,notes:renderNotes,xmas:renderXmas,queue:renderQueue,costs:renderCosts,bot:renderBot};
+const RENDERS={filament:renderFilament,jobs:renderJobs,assign:renderAssign,files:renderFiles,stock:renderStock,products:renderProducts,enquiries:renderEnquiries,orders:renderOrders,notes:renderNotes,xmas:renderXmas,queue:renderQueue,costs:renderCosts,bot:renderBot,cal:renderCal};
 function render(){
   const t=tab();
   $('app').innerHTML=RENDERS[t]();
