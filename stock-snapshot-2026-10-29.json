@@ -1,0 +1,405 @@
+{
+  "asOf": "2026-10-29",
+  "totals": {
+    "products": 76,
+    "units": 2590,
+    "value": 24711.5,
+    "target": 20000,
+    "pct": 123.6
+  },
+  "categories": [
+    "Bookmarks",
+    "Dragons",
+    "Faceplates",
+    "Giant Pokeballs",
+    "Gift Boxes",
+    "Hueforges",
+    "Keyrings",
+    "Large items",
+    "Minis / Fidgets",
+    "Pokéballs",
+    "Pokémon"
+  ],
+  "stock": {
+    "Annoying Gift Box": {
+      "cat": "Gift Boxes",
+      "price": 10,
+      "qty": 30
+    },
+    "Annoying Gift Box (Small)": {
+      "cat": "Gift Boxes",
+      "price": 8,
+      "qty": 20
+    },
+    "Basic Pokeballs": {
+      "cat": "Pokéballs",
+      "price": 12,
+      "qty": 74
+    },
+    "Bellsprout": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 5
+    },
+    "Blastoise": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 51
+    },
+    "Bookmarks": {
+      "cat": "Bookmarks",
+      "price": 4,
+      "qty": 140
+    },
+    "Bulbasaur": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 48
+    },
+    "Charizard": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 22
+    },
+    "Charizard - Large": {
+      "cat": "Hueforges",
+      "price": 20,
+      "qty": 5
+    },
+    "Charmander": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 29
+    },
+    "Charmeleon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 15
+    },
+    "Cyndaquil": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 47
+    },
+    "Darkrai": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 8
+    },
+    "Dragon (Large)": {
+      "cat": "Dragons",
+      "price": 25,
+      "qty": 16
+    },
+    "Dragon (Medium)": {
+      "cat": "Dragons",
+      "price": 18,
+      "qty": 52
+    },
+    "Dragon (Small)": {
+      "cat": "Dragons",
+      "price": 12,
+      "qty": 60
+    },
+    "Dragonite": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 16
+    },
+    "Ekans": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 4
+    },
+    "Electabuzz": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 6
+    },
+    "Espeon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 27
+    },
+    "Flareon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 23
+    },
+    "Flex Rex (Large)": {
+      "cat": "Dragons",
+      "price": 20,
+      "qty": 3
+    },
+    "Flex Rexi Mini": {
+      "cat": "Minis / Fidgets",
+      "price": 2.5,
+      "qty": 181
+    },
+    "Gastly": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 9
+    },
+    "Gengar": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 14
+    },
+    "Giant Pokeball (Pikachu)": {
+      "cat": "Giant Pokeballs",
+      "price": 50,
+      "qty": 5
+    },
+    "Giant Pokeball (Snorlax)": {
+      "cat": "Giant Pokeballs",
+      "price": 50,
+      "qty": 5
+    },
+    "Glaceon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 26
+    },
+    "Gyrados - Large": {
+      "cat": "Hueforges",
+      "price": 20,
+      "qty": 3
+    },
+    "Harry Potter Keyring": {
+      "cat": "Keyrings",
+      "price": 3,
+      "qty": 25
+    },
+    "Haunter": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 26
+    },
+    "Jolteon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 24
+    },
+    "Joystick Mini": {
+      "cat": "Minis / Fidgets",
+      "price": 2.5,
+      "qty": 106
+    },
+    "LUFFY - Large": {
+      "cat": "Hueforges",
+      "price": 20,
+      "qty": 4
+    },
+    "LUFFY - Small": {
+      "cat": "Hueforges",
+      "price": 10,
+      "qty": 18
+    },
+    "Labubu Keyring": {
+      "cat": "Keyrings",
+      "price": 3,
+      "qty": 35
+    },
+    "Leafeon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 8
+    },
+    "Magmar": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 11
+    },
+    "Mario Keyring": {
+      "cat": "Keyrings",
+      "price": 3,
+      "qty": 42
+    },
+    "Mega Charizard": {
+      "cat": "Giant Pokeballs",
+      "price": 100,
+      "qty": 1
+    },
+    "Mega Gengar": {
+      "cat": "Giant Pokeballs",
+      "price": 75,
+      "qty": 1
+    },
+    "Mew": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 52
+    },
+    "Mew (Blue)": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 5
+    },
+    "Mewtwo": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 39
+    },
+    "Mewtwo - Large": {
+      "cat": "Hueforges",
+      "price": 20,
+      "qty": 22
+    },
+    "Minecraft Keyring": {
+      "cat": "Keyrings",
+      "price": 3,
+      "qty": 50
+    },
+    "Moon Lamp": {
+      "cat": "Large items",
+      "price": 25,
+      "qty": 10
+    },
+    "Nintendo Switch Faceplate": {
+      "cat": "Faceplates",
+      "price": 25,
+      "qty": 20
+    },
+    "One Piece Keyring": {
+      "cat": "Keyrings",
+      "price": 3,
+      "qty": 28
+    },
+    "Pikachu": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 42
+    },
+    "Pokemon (Bulk - Pending Breakdown)": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 45
+    },
+    "Pokescene - Charizard": {
+      "cat": "Hueforges",
+      "price": 10,
+      "qty": 21
+    },
+    "Pokescene - Gengar": {
+      "cat": "Hueforges",
+      "price": 10,
+      "qty": 22
+    },
+    "Pokescene - Mew": {
+      "cat": "Hueforges",
+      "price": 10,
+      "qty": 11
+    },
+    "Pokescene - Mewtwo": {
+      "cat": "Hueforges",
+      "price": 10,
+      "qty": 28
+    },
+    "Pokescene - Starter": {
+      "cat": "Hueforges",
+      "price": 10,
+      "qty": 14
+    },
+    "Pokescene Keyring": {
+      "cat": "Keyrings",
+      "price": 3,
+      "qty": 143
+    },
+    "Poliwag": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 4
+    },
+    "Raichu": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 14
+    },
+    "RetroScenes": {
+      "cat": "Hueforges",
+      "price": 12,
+      "qty": 60
+    },
+    "Rhydon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 9
+    },
+    "Skull Statue": {
+      "cat": "Large items",
+      "price": 35,
+      "qty": 9
+    },
+    "Snorlax": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 30
+    },
+    "Squirtle": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 34
+    },
+    "Starmie": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 5
+    },
+    "Sylveon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 34
+    },
+    "Tadling Keyring": {
+      "cat": "Keyrings",
+      "price": 3,
+      "qty": 43
+    },
+    "Togepi": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 34
+    },
+    "Typhlosion": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 8
+    },
+    "Umbreon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 34
+    },
+    "Vaporeon": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 13
+    },
+    "Vulpix": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 9
+    },
+    "Weezing": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 7
+    },
+    "Zou Mini": {
+      "cat": "Minis / Fidgets",
+      "price": 2.5,
+      "qty": 406
+    },
+    "Zou Mini Keyring": {
+      "cat": "Keyrings",
+      "price": 3,
+      "qty": 35
+    },
+    "Zubat": {
+      "cat": "Pokémon",
+      "price": 16,
+      "qty": 5
+    }
+  }
+}

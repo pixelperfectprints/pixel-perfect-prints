@@ -1124,12 +1124,27 @@ function renderStock(){
   const hideOut=fget('st_hideOut','1')==='1';
   const db=state.stock||{};
   const lines=[];
-  const names=new Set([...STOCK_SEED.flatMap(c=>c.items.map(i=>i.name)),...Object.keys(db)]);
-  for(const c of STOCK_SEED)for(const it of c.items){
-    const live=db[it.name];
-    lines.push({cat:c.name,price:it.price,name:it.name,qty:live&&live.qty!=null?+live.qty:it.qty});
-  }
-  for(const[n,v]of Object.entries(db))if(!names.has(n)&&v&&v.qty!=null)lines.push({cat:v.cat||'Uncategorised',price:+v.price||0,name:n,qty:+v.qty});
+  // STOCK_SEED was the frozen 30-Aug baseline, used as a fallback while Firebase
+  // was empty/locked. Firebase was rebuilt 26-Oct with EVERY product renamed/
+  // restructured (e.g. "Large dragons"->"Dragon (Large)", "Mew (blue)"->"Mew (Blue)"),
+  // so seed names no longer match live names at all — using seed as a fallback only
+  // produces phantom double-counted rows under the old names. The DB is now complete
+  // and authoritative on its own; seed is retained in the file for history but is
+  // NOT read here anymore. Every live product now carries its own 'cat' field
+  // (written 2026-10-26) — guessCat() is only a safety net for anything added
+  // later without one set.
+  const guessCat=(n)=>{
+    const l=n.toLowerCase();
+    if(/dragon|flex rex/.test(l))return'Dragons';
+    if(/keyring/.test(l))return'Keyrings';
+    if(/mini/.test(l))return'Minis / Fidgets';
+    if(/pokeball|pokéball/.test(l)&&/giant|mega/.test(l))return'Giant Pokeballs';
+    if(/pokeball|pokéball/.test(l))return'Pokéballs';
+    if(/hueforge/.test(l))return'Hueforges';
+    if(/moon lamp|pokescene \(large\)|pokéscene/.test(l))return'Large items';
+    return'Pokémon';
+  };
+  for(const[n,v]of Object.entries(db))if(v&&v.qty!=null)lines.push({cat:v.cat||guessCat(n),price:+v.price||0,name:n,qty:+v.qty});
   const fmt=v=>'£'+v.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
   const statusOf=l=>l.qty<=0?'out':l.qty<=4?'low':l.qty<10?'warn':'ok';
   const stat=(k,v,n,cls='')=>`<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;

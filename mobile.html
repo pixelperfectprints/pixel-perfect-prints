@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0c10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>PPP Ops — Mobile</title>
+<style>
+:root{
+  --bg:#0b0c10;--card:#151821;--card2:#1b1f2b;--bord:#262b3a;--fg:#eef0f5;--mut:#8b91a3;
+  --accent:#ff2ea6;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--blue:#00e5ff;
+  --p-jammin:#ff2ea6;--p-james:#00e5ff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+body{padding-bottom:84px;min-height:100vh}
+h1,h2,h3{margin:0 0 8px}
+.wrap{padding:14px 14px 4px}
+.hidden{display:none !important}
+input,select,textarea,button{font-family:inherit;font-size:16px}
+input,select,textarea{background:var(--card2);color:var(--fg);border:1px solid var(--bord);border-radius:10px;padding:11px 12px;width:100%}
+button{cursor:pointer}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 16px;font-weight:600}
+.btn.alt{background:var(--card2);color:var(--fg);border:1px solid var(--bord)}
+.btn.sm{padding:7px 11px;font-size:13px;border-radius:8px}
+.btn.ghost{background:transparent;border:1px solid var(--bord);color:var(--mut)}
+.row{display:flex;gap:8px;align-items:center}
+.row.wrap-row{flex-wrap:wrap}
+.sp{flex:1}
+.mut{color:var(--mut)}
+.err{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:10px 12px;font-size:13px;margin-top:8px}
+.ok-msg{background:rgba(74,222,128,.12);color:var(--ok);border:1px solid rgba(74,222,128,.3);border-radius:10px;padding:10px 12px;font-size:13px;margin-top:8px}
+
+/* ---- login ---- */
+#login{display:flex;flex-direction:column;justify-content:center;min-height:100vh;padding:28px}
+#login .box{max-width:360px;margin:0 auto;width:100%}
+#login h1{font-size:22px;margin-bottom:4px}
+#login input{margin-bottom:10px}
+
+/* ---- header ---- */
+#hdr{position:sticky;top:0;z-index:20;background:rgba(11,12,16,.92);backdrop-filter:blur(10px);
+  padding:12px 14px 10px;border-bottom:1px solid var(--bord)}
+#hdr .top{display:flex;justify-content:space-between;align-items:center}
+#hdr .title{font-size:17px;font-weight:700}
+#hdr .user{font-size:12px;color:var(--mut)}
+.sync{font-size:11px;color:var(--mut);margin-top:3px}
+.sync.err{color:var(--bad)}
+.sync.live{color:var(--ok)}
+
+/* ---- tab bar (bottom nav, thumb reach) ---- */
+#tabbar{position:fixed;bottom:0;left:0;right:0;z-index:30;background:rgba(14,16,22,.97);backdrop-filter:blur(14px);
+  border-top:1px solid var(--bord);display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+#tabbar button{flex:1;background:none;border:none;color:var(--mut);display:flex;flex-direction:column;align-items:center;
+  gap:2px;padding:7px 2px;border-radius:10px;font-size:10.5px;font-weight:600}
+#tabbar button .ic{font-size:20px;line-height:1}
+#tabbar button.active{color:var(--accent)}
+#tabbar button .badge{position:absolute;margin-left:14px;margin-top:-20px;background:var(--bad);color:#fff;
+  font-size:9px;font-weight:700;border-radius:8px;padding:1px 5px;min-width:14px;text-align:center}
+
+/* ---- cards ---- */
+.card{background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+.card h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:10px}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--bord);border-radius:12px;padding:12px}
+.stat .k{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.03em}
+.stat .v{font-size:22px;font-weight:800;margin:2px 0}
+.stat .n{font-size:11px;color:var(--mut)}
+.stat.bad .v{color:var(--bad)}
+.stat.warn .v{color:var(--warn)}
+.stat.ok .v{color:var(--ok)}
+
+/* ---- list items ---- */
+.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bord)}
+.item:last-child{border-bottom:none}
+.item .swatch{width:22px;height:22px;border-radius:7px;flex-shrink:0;border:1px solid rgba(255,255,255,.15)}
+.item .main{flex:1;min-width:0}
+.item .nm{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .sub{font-size:12px;color:var(--mut);margin-top:1px}
+.item .right{text-align:right;flex-shrink:0}
+.item .qty{font-size:16px;font-weight:800}
+.qty.crit{color:var(--bad)}
+.qty.low{color:var(--warn)}
+.qty.ok{color:var(--ok)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase}
+.pill.queued{background:rgba(251,191,36,.15);color:var(--warn)}
+.pill.printing{background:rgba(0,229,255,.15);color:var(--blue)}
+.pill.done{background:rgba(74,222,128,.15);color:var(--ok)}
+.pill.high{background:rgba(248,113,113,.15);color:var(--bad)}
+.pill.med{background:rgba(251,191,36,.15);color:var(--warn)}
+.pill.low{background:rgba(139,145,163,.15);color:var(--mut)}
+
+/* ---- filter chips ---- */
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;background:var(--card2);border:1px solid var(--bord);color:var(--mut);padding:6px 12px;
+  border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ---- search ---- */
+.search-box{position:relative;margin-bottom:10px}
+.search-box input{padding-left:34px}
+.search-box .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mut);font-size:15px}
+
+/* ---- FAB ---- */
+.fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:25;
+  background:var(--accent);color:#fff;border:none;width:52px;height:52px;border-radius:50%;
+  font-size:26px;box-shadow:0 6px 18px rgba(255,46,166,.4);display:flex;align-items:center;justify-content:center}
+
+/* ---- modal / sheet ---- */
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:flex-end}
+.sheet{background:var(--card);border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+  width:100%;max-height:85vh;overflow-y:auto;border-top:1px solid var(--bord)}
+.sheet .handle{width:36px;height:4px;background:var(--bord);border-radius:4px;margin:0 auto 14px}
+.sheet h2{font-size:17px}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:12px;color:var(--mut);margin-bottom:5px;font-weight:600}
+.btnrow{display:flex;gap:8px;margin-top:14px}
+.btnrow .btn{flex:1}
+
+/* ---- calendar ---- */
+.cal-item{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--bord)}
+.cal-item:last-child{border-bottom:none}
+.cal-date{flex-shrink:0;width:46px;text-align:center;background:var(--card2);border-radius:10px;padding:6px 2px}
+.cal-date .d{font-size:17px;font-weight:800;line-height:1}
+.cal-date .m{font-size:10px;color:var(--mut);text-transform:uppercase}
+.cal-item.done{opacity:.45}
+.cal-item.done .cal-date{background:transparent}
+.cal-check{width:22px;height:22px;border-radius:7px;border:2px solid var(--bord);flex-shrink:0;margin-top:2px;
+  display:flex;align-items:center;justify-content:center;font-size:13px}
+.cal-check.on{background:var(--ok);border-color:var(--ok);color:#06261a}
+
+.empty{text-align:center;color:var(--mut);padding:30px 10px;font-size:13.5px}
+.who{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px}
+.who.Jammin{background:rgba(255,46,166,.15);color:var(--p-jammin)}
+.who.James{background:rgba(0,229,255,.15);color:var(--p-james)}
+#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--bord);
+  color:var(--fg);padding:10px 18px;border-radius:999px;font-size:13px;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.4);
+  opacity:0;pointer-events:none;transition:opacity .25s}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="box">
+    <h1>🏭 PPP Ops</h1>
+    <p class="mut" style="margin-bottom:20px">Jammin &amp; James only — mobile console.</p>
+    <input id="l-email" type="email" placeholder="you@example.com" autocomplete="username">
+    <input id="l-pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" style="width:100%" onclick="doLogin()">Log in</button>
+    <div class="err hidden" id="lerr"></div>
+    <p class="mut" style="margin-top:14px;font-size:12.5px">Same login as the desktop ops dashboard.</p>
+  </div>
+</div>
+
+<div id="hdr" class="hidden">
+  <div class="top">
+    <div>
+      <div class="title">🏭 PPP Ops</div>
+      <div class="user" id="userbox"></div>
+    </div>
+    <button class="btn ghost sm" onclick="logout()">Log out</button>
+  </div>
+  <div class="sync" id="sync">connecting…</div>
+</div>
+
+<div id="app" class="hidden wrap">
+
+  <!-- ===================== FILAMENT TAB ===================== -->
+  <div id="tab-filament" class="tabpane">
+    <div class="stats-grid" id="fil-stats"></div>
+    <div class="search-box"><span class="ic">🔍</span><input id="fil-search" placeholder="Search filament…" oninput="renderFilament()"></div>
+    <div class="chips" id="fil-chips"></div>
+    <div class="card"><h3>Spools</h3><div id="fil-list"></div></div>
+  </div>
+
+  <!-- ===================== JOB QUEUE TAB ===================== -->
+  <div id="tab-jobs" class="tabpane hidden">
+    <div class="stats-grid" id="job-stats"></div>
+    <div class="chips" id="job-chips"></div>
+    <div class="card"><h3>Queue</h3><div id="job-list"></div></div>
+  </div>
+
+  <!-- ===================== STOCK TAB ===================== -->
+  <div id="tab-stock" class="tabpane hidden">
+    <div class="stats-grid" id="stock-stats"></div>
+    <div class="search-box"><span class="ic">🔍</span><input id="stock-search" placeholder="Search stock…" oninput="renderStock()"></div>
+    <div class="chips" id="stock-chips"></div>
+    <div class="card"><h3>Products</h3><div id="stock-list"></div></div>
+  </div>
+
+  <!-- ===================== CALENDAR TAB ===================== -->
+  <div id="tab-cal" class="tabpane hidden">
+    <div class="stats-grid" id="cal-stats"></div>
+    <div class="chips" id="cal-chips"></div>
+    <div class="card"><h3>Events</h3><div id="cal-list"></div></div>
+  </div>
+
+</div>
+
+<button class="fab hidden" id="fab" onclick="openAddSheet()">+</button>
+
+<div id="tabbar" class="hidden">
+  <button class="tabbtn active" data-tab="filament" onclick="switchTab('filament')"><span class="ic">🧵</span>Filament</button>
+  <button class="tabbtn" data-tab="jobs" onclick="switchTab('jobs')"><span class="ic">🖨️</span>Queue</button>
+  <button class="tabbtn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span>Stock</button>
+  <button class="tabbtn" data-tab="cal" onclick="switchTab('cal')"><span class="ic">📅</span>Calendar</button>
+</div>
+
+<div id="sheetHost"></div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+/* ======================================================================
+   PPP Ops Mobile — reads/writes the SAME live Firebase RTDB as ops.html
+   Node map (confirmed against live data 2026-10-26):
+     ops/filament/<name>   {name,type,owner,kg,min,spools,sw,note}
+     ops/jobs/<pushid>     {title,status,kind,printer,eta,created,loggedBy}
+     ops/stock/<name>      {cat,price,qty}
+     ops/cal/<pushid>      {what,start,end,pri,done,created}
+   ====================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCzlGn6fiNJ1K37pxp5iHss023zebx_ShA",
+  authDomain: "ppp-db-f0129.firebaseapp.com",
+  databaseURL: "https://ppp-db-f0129-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ppp-db-f0129"
+};
+
+let db=null, state={filament:{},jobs:{},stock:{},cal:{}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const me=()=>{const e=firebase.auth().currentUser?.email||'';return /^james/i.test(e)?'James':'Jammin';};
+function whoKey(n){const s=String(n??'').trim().toLowerCase();if(!s)return null;
+  if(s.startsWith('jame'))return'James';if(s.startsWith('jamm')||s.startsWith('ben'))return'Jammin';
+  if(s==='j')return'Jammin';if(s==='b')return'James';return null;}
+function whoChip(n){const k=whoKey(n);return k?`<span class="who ${k}">${k}</span>`:'';}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2200);}
+
+/* ---------- auth ---------- */
+function doLogin(){
+  const e=$('lerr');e.classList.add('hidden');
+  firebase.auth().signInWithEmailAndPassword($('l-email').value.trim(),$('l-pass').value)
+    .catch(err=>{e.textContent='⚠ '+err.message;e.classList.remove('hidden');});
+}
+function logout(){firebase.auth().signOut();}
+
+function boot(){
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db=firebase.database();
+  firebase.auth().onAuthStateChanged(u=>{
+    if(u){
+      $('login').classList.add('hidden');
+      $('hdr').classList.remove('hidden');
+      $('app').classList.remove('hidden');
+      $('tabbar').classList.remove('hidden');
+      $('fab').classList.remove('hidden');
+      $('userbox').textContent=u.email+' ('+me()+')';
+      db.ref('ops').on('value',snap=>{
+        state=Object.assign({filament:{},jobs:{},stock:{},cal:{}},snap.val()||{});
+        $('sync').textContent='● live — synced';
+        $('sync').className='sync live';
+        renderAll();
+      },err=>{
+        $('sync').textContent='⚠ '+err.message;
+        $('sync').className='sync err';
+      });
+    }else{
+      $('login').classList.remove('hidden');
+      $('hdr').classList.add('hidden');
+      $('app').classList.add('hidden');
+      $('tabbar').classList.add('hidden');
+      $('fab').classList.add('hidden');
+    }
+  });
+}
+
+/* ---------- tabs ---------- */
+let curTab='filament', curFilChip='all', curJobChip='queued', curStockChip='all', curCalChip='upcoming';
+function switchTab(t){
+  curTab=t;
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hidden'));
+  $('tab-'+t).classList.remove('hidden');
+  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  renderAll();
+}
+function renderAll(){renderFilament();renderJobs();renderStock();renderCal();}
+
+/* ===================== FILAMENT ===================== */
+function renderFilament(){
+  const fil=state.filament||{};
+  const lines=Object.entries(fil).map(([n,v])=>({name:n,...v}));
+  const q=($('fil-search')?.value||'').toLowerCase();
+  const lowCount=lines.filter(l=>(+l.kg||0)<=(+l.min||0.3)).length;
+  const outCount=lines.filter(l=>(+l.kg||0)<=0).length;
+  const totalKg=lines.reduce((s,l)=>s+(+l.kg||0),0);
+  $('fil-stats').innerHTML=`
+    <div class="stat ${outCount?'bad':''}"><div class="k">Out</div><div class="v">${outCount}</div><div class="n">0kg spools</div></div>
+    <div class="stat ${lowCount?'warn':'ok'}"><div class="k">Low</div><div class="v">${lowCount}</div><div class="n">at/under min</div></div>
+    <div class="stat"><div class="k">Total</div><div class="v">${totalKg.toFixed(1)}kg</div><div class="n">${lines.length} colours</div></div>
+    <div class="stat"><div class="k">Spools</div><div class="v">${lines.reduce((s,l)=>s+(+l.spools||0),0)}</div><div class="n">on hand</div></div>`;
+  const owners=['all',...new Set(lines.map(l=>l.owner).filter(Boolean))];
+  $('fil-chips').innerHTML=owners.map(o=>`<button class="chip ${curFilChip===o?'active':''}" onclick="curFilChip='${o}';renderFilament()">${o==='all'?'All':o==='J'?'Jammin':o==='B'?'James':esc(o)}</button>`).join('');
+  let disp=lines.filter(l=>curFilChip==='all'||l.owner===curFilChip);
+  if(q)disp=disp.filter(l=>l.name.toLowerCase().includes(q)||String(l.type||'').toLowerCase().includes(q));
+  disp.sort((a,b)=>(+a.kg||0)-(+b.kg||0));
+  $('fil-list').innerHTML=disp.length?disp.map(l=>{
+    const kg=+l.kg||0, min=+l.min||0.3;
+    const cls=kg<=0?'crit':kg<=min?'low':'ok';
+    return `<div class="item" onclick='openFilSheet(${JSON.stringify(l.name)})'>
+      <div class="swatch" style="background:${esc(l.sw||'#888')}"></div>
+      <div class="main"><div class="nm">${esc(l.name)}</div><div class="sub">${esc(l.type||'')} · ${whoChip(l.owner)}</div></div>
+      <div class="right"><div class="qty ${cls}">${kg}kg</div><div class="sub">${l.spools||0} spool${(l.spools||0)===1?'':'s'}</div></div>
+    </div>`;
+  }).join(''):`<div class="empty">No filament matches.</div>`;
+}
+function openFilSheet(name){
+  const f=state.filament[name]||{};
+  openSheet(`
+    <h2>${esc(name)}</h2>
+    <p class="mut" style="margin:2px 0 14px">${esc(f.type||'')} · ${whoChip(f.owner)}</p>
+    <div class="field"><label>On hand (kg)</label><input id="sf-kg" type="number" step="0.1" value="${+f.kg||0}"></div>
+    <div class="field"><label>Reorder minimum (kg)</label><input id="sf-min" type="number" step="0.1" value="${+f.min||0.3}"></div>
+    <div class="field"><label>Spools in reserve</label><input id="sf-spools" type="number" step="1" value="${+f.spools||0}"></div>
+    <div class="btnrow">
+      <button class="btn alt" onclick="closeSheet()">Cancel</button>
+      <button class="btn" onclick="saveFil(${JSON.stringify(name)})">Save</button>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost sm" style="flex:1" onclick="bumpFil(${JSON.stringify(name)},-0.1)">−0.1kg (used)</button>
+      <button class="btn ghost sm" style="flex:1" onclick="bumpFil(${JSON.stringify(name)},1)">+1kg (new spool)</button>
+    </div>
+  `);
+}
+function saveFil(name){
+  const kg=+$('sf-kg').value, min=+$('sf-min').value, spools=+$('sf-spools').value;
+  db.ref('ops/filament/'+name).update({kg,min,spools}).then(()=>{closeSheet();toast('Saved '+name);}).catch(e=>toast('⚠ '+e.message));
+}
+function bumpFil(name,delta){
+  const f=state.filament[name]||{};
+  const newKg=Math.max(0,Math.round(((+f.kg||0)+delta)*100)/100);
+  db.ref('ops/filament/'+name+'/kg').set(newKg).then(()=>toast(name+' → '+newKg+'kg')).catch(e=>toast('⚠ '+e.message));
+}
+
+/* ===================== JOB QUEUE ===================== */
+function renderJobs(){
+  const jobs=state.jobs||{};
+  const lines=Object.entries(jobs).map(([id,v])=>({id,...v}));
+  const queued=lines.filter(l=>l.status==='queued').length;
+  const printing=lines.filter(l=>l.status==='printing').length;
+  const done=lines.filter(l=>l.status==='done').length;
+  $('job-stats').innerHTML=`
+    <div class="stat warn"><div class="k">Queued</div><div class="v">${queued}</div><div class="n">waiting</div></div>
+    <div class="stat"><div class="k">Printing</div><div class="v">${printing}</div><div class="n">on a bed now</div></div>
+    <div class="stat ok"><div class="k">Done</div><div class="v">${done}</div><div class="n">this log</div></div>
+    <div class="stat"><div class="k">Total</div><div class="v">${lines.length}</div><div class="n">all jobs</div></div>`;
+  const statuses=['queued','printing','done','all'];
+  $('job-chips').innerHTML=statuses.map(s=>`<button class="chip ${curJobChip===s?'active':''}" onclick="curJobChip='${s}';renderJobs()">${s==='all'?'All':s[0].toUpperCase()+s.slice(1)}</button>`).join('');
+  let disp=curJobChip==='all'?lines:lines.filter(l=>l.status===curJobChip);
+  disp.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
+  $('job-list').innerHTML=disp.length?disp.map(l=>`
+    <div class="item" onclick='openJobSheet(${JSON.stringify(l.id)})'>
+      <div class="main">
+        <div class="nm">${esc(l.title||'(untitled job)')}</div>
+        <div class="sub">${l.printer?esc(l.printer)+' · ':''}${l.eta?'ETA '+esc(l.eta)+' · ':''}${whoChip(l.loggedBy)}</div>
+      </div>
+      <div class="right"><span class="pill ${esc(l.status||'queued')}">${esc(l.status||'queued')}</span></div>
+    </div>`).join(''):`<div class="empty">No jobs in this filter.</div>`;
+}
+function openJobSheet(id){
+  const j=(state.jobs||{})[id]||{};
+  openSheet(`
+    <h2>${esc(j.title||'(untitled job)')}</h2>
+    <p class="mut" style="margin:2px 0 14px">${j.created?'Logged '+esc(j.created)+' · ':''}${whoChip(j.loggedBy)}</p>
+    <div class="field"><label>Title</label><input id="sj-title" value="${esc(j.title||'')}"></div>
+    <div class="field"><label>Printer</label><input id="sj-printer" value="${esc(j.printer||'')}" placeholder="A1 / Lego / Printer 1 / 2 / 3"></div>
+    <div class="field"><label>ETA</label><input id="sj-eta" type="date" value="${esc(j.eta||'')}"></div>
+    <div class="field"><label>Status</label>
+      <select id="sj-status">
+        <option value="queued" ${j.status==='queued'?'selected':''}>Queued</option>
+        <option value="printing" ${j.status==='printing'?'selected':''}>Printing</option>
+        <option value="done" ${j.status==='done'?'selected':''}>Done</option>
+      </select>
+    </div>
+    <div class="btnrow">
+      <button class="btn alt" onclick="closeSheet()">Cancel</button>
+      <button class="btn" onclick="saveJob(${JSON.stringify(id)})">Save</button>
+    </div>
+  `);
+}
+function saveJob(id){
+  const body={
+    title:$('sj-title').value.trim(),
+    printer:$('sj-printer').value.trim(),
+    eta:$('sj-eta').value,
+    status:$('sj-status').value
+  };
+  db.ref('ops/jobs/'+id).update(body).then(()=>{closeSheet();toast('Job updated');}).catch(e=>toast('⚠ '+e.message));
+}
+function newJob(){
+  const now=new Date();
+  const created=now.toISOString().slice(0,16).replace('T',' ');
+  openSheet(`
+    <h2>New print job</h2>
+    <div class="field"><label>Title</label><input id="nj-title" placeholder="e.g. 20x Haunter balls" autofocus></div>
+    <div class="field"><label>Printer</label><input id="nj-printer" placeholder="A1 / Lego / Printer 1 / 2 / 3"></div>
+    <div class="field"><label>ETA</label><input id="nj-eta" type="date"></div>
+    <div class="btnrow">
+      <button class="btn alt" onclick="closeSheet()">Cancel</button>
+      <button class="btn" onclick="createJob()">Add to queue</button>
+    </div>
+  `);
+}
+function createJob(){
+  const title=$('nj-title').value.trim();
+  if(!title){toast('⚠ Needs a title');return;}
+  const now=new Date();
+  const created=now.toISOString().slice(0,16).replace('T',' ');
+  const body={title,printer:$('nj-printer').value.trim(),eta:$('nj-eta').value,status:'queued',kind:'print',created,loggedBy:me()};
+  db.ref('ops/jobs').push(body).then(()=>{closeSheet();toast('Job queued');switchTab('jobs');}).catch(e=>toast('⚠ '+e.message));
+}
+
+/* ===================== STOCK ===================== */
+function renderStock(){
+  const stock=state.stock||{};
+  const lines=Object.entries(stock).map(([n,v])=>({name:n,...v}));
+  const q=($('stock-search')?.value||'').toLowerCase();
+  const lowList=lines.filter(l=>(+l.qty||0)>0&&(+l.qty||0)<=4);
+  const outList=lines.filter(l=>(+l.qty||0)<=0);
+  const totU=lines.reduce((s,l)=>s+(+l.qty||0),0);
+  const totV=lines.reduce((s,l)=>s+(+l.qty||0)*(+l.price||0),0);
+  $('stock-stats').innerHTML=`
+    <div class="stat"><div class="k">Units</div><div class="v">${totU}</div><div class="n">${lines.length} products</div></div>
+    <div class="stat"><div class="k">Value</div><div class="v">£${totV.toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0})}</div><div class="n">at shelf price</div></div>
+    <div class="stat warn"><div class="k">Low</div><div class="v">${lowList.length}</div><div class="n">≤4 units</div></div>
+    <div class="stat bad"><div class="k">Out</div><div class="v">${outList.length}</div><div class="n">sold out</div></div>`;
+  const cats=['all',...new Set(lines.map(l=>l.cat).filter(Boolean))];
+  $('stock-chips').innerHTML=cats.map(c=>`<button class="chip ${curStockChip===c?'active':''}" onclick="curStockChip='${esc(c)}';renderStock()">${c==='all'?'All':esc(c)}</button>`).join('');
+  let disp=lines.filter(l=>curStockChip==='all'||l.cat===curStockChip);
+  if(q)disp=disp.filter(l=>l.name.toLowerCase().includes(q));
+  disp.sort((a,b)=>(+a.qty||0)-(+b.qty||0));
+  $('stock-list').innerHTML=disp.length?disp.map(l=>{
+    const qty=+l.qty||0; const cls=qty<=0?'crit':qty<=4?'low':'ok';
+    return `<div class="item" onclick='openStockSheet(${JSON.stringify(l.name)})'>
+      <div class="main"><div class="nm">${esc(l.name)}</div><div class="sub">${esc(l.cat||'')} · £${(+l.price||0).toFixed(2)}</div></div>
+      <div class="right"><div class="qty ${cls}">${qty}</div><div class="sub">£${(qty*(+l.price||0)).toFixed(0)}</div></div>
+    </div>`;
+  }).join(''):`<div class="empty">No stock matches.</div>`;
+}
+function openStockSheet(name){
+  const s=(state.stock||{})[name]||{};
+  openSheet(`
+    <h2>${esc(name)}</h2>
+    <p class="mut" style="margin:2px 0 14px">${esc(s.cat||'Uncategorised')}</p>
+    <div class="field"><label>Quantity on shelf</label><input id="ss-qty" type="number" step="1" value="${+s.qty||0}"></div>
+    <div class="field"><label>Price (£)</label><input id="ss-price" type="number" step="0.01" value="${+s.price||0}"></div>
+    <div class="btnrow">
+      <button class="btn alt" onclick="closeSheet()">Cancel</button>
+      <button class="btn" onclick="saveStock(${JSON.stringify(name)})">Save</button>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost sm" style="flex:1" onclick="bumpStock(${JSON.stringify(name)},-1)">−1 (sold)</button>
+      <button class="btn ghost sm" style="flex:1" onclick="bumpStock(${JSON.stringify(name)},1)">+1 (printed)</button>
+    </div>
+  `);
+}
+function saveStock(name){
+  const qty=+$('ss-qty').value, price=+$('ss-price').value;
+  db.ref('ops/stock/'+name).update({qty,price}).then(()=>{closeSheet();toast('Saved '+name);}).catch(e=>toast('⚠ '+e.message));
+}
+function bumpStock(name,delta){
+  const s=(state.stock||{})[name]||{};
+  const newQty=Math.max(0,(+s.qty||0)+delta);
+  db.ref('ops/stock/'+name+'/qty').set(newQty).then(()=>toast(name+' → '+newQty)).catch(e=>toast('⚠ '+e.message));
+}
+
+/* ===================== CALENDAR ===================== */
+function renderCal(){
+  const cal=state.cal||{};
+  const lines=Object.entries(cal).map(([id,v])=>({id,...v}));
+  const todayStr=new Date().toISOString().slice(0,10);
+  const upcoming=lines.filter(l=>!l.done&&(!l.end||l.end>=todayStr)).length;
+  const overdue=lines.filter(l=>!l.done&&l.end&&l.end<todayStr).length;
+  const highPri=lines.filter(l=>!l.done&&l.pri==='high').length;
+  $('cal-stats').innerHTML=`
+    <div class="stat"><div class="k">Upcoming</div><div class="v">${upcoming}</div><div class="n">not done</div></div>
+    <div class="stat ${overdue?'bad':''}"><div class="k">Overdue</div><div class="v">${overdue}</div><div class="n">past end date</div></div>
+    <div class="stat warn"><div class="k">High pri</div><div class="v">${highPri}</div><div class="n">flagged urgent</div></div>
+    <div class="stat"><div class="k">Total</div><div class="v">${lines.length}</div><div class="n">all events</div></div>`;
+  const filters=['upcoming','done','all'];
+  $('cal-chips').innerHTML=filters.map(f=>`<button class="chip ${curCalChip===f?'active':''}" onclick="curCalChip='${f}';renderCal()">${f[0].toUpperCase()+f.slice(1)}</button>`).join('');
+  let disp=lines;
+  if(curCalChip==='upcoming')disp=lines.filter(l=>!l.done);
+  if(curCalChip==='done')disp=lines.filter(l=>l.done);
+  disp.sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  $('cal-list').innerHTML=disp.length?disp.map(l=>{
+    const d=l.start?new Date(l.start+'T00:00'):null;
+    const dayNum=d?d.getDate():'–';
+    const mon=d?d.toLocaleString('en-GB',{month:'short'}):'';
+    return `<div class="cal-item ${l.done?'done':''}">
+      <div class="cal-date"><div class="d">${dayNum}</div><div class="m">${mon}</div></div>
+      <div class="cal-check ${l.done?'on':''}" onclick='toggleCal(${JSON.stringify(l.id)},${!l.done})'>${l.done?'✓':''}</div>
+      <div class="main" onclick='openCalSheet(${JSON.stringify(l.id)})'>
+        <div class="nm">${esc(l.what||'(untitled)')}</div>
+        <div class="sub">${l.end&&l.end!==l.start?'→ '+esc(l.end)+' · ':''}<span class="pill ${esc(l.pri||'low')}">${esc(l.pri||'low')}</span></div>
+      </div>
+    </div>`;
+  }).join(''):`<div class="empty">Nothing here.</div>`;
+}
+function toggleCal(id,val){
+  db.ref('ops/cal/'+id+'/done').set(val).then(()=>toast(val?'Marked done':'Reopened')).catch(e=>toast('⚠ '+e.message));
+}
+function openCalSheet(id){
+  const c=(state.cal||{})[id]||{};
+  openSheet(`
+    <h2>${esc(c.what||'(untitled)')}</h2>
+    <div class="field"><label>What</label><input id="sc-what" value="${esc(c.what||'')}"></div>
+    <div class="field"><label>Start</label><input id="sc-start" type="date" value="${esc(c.start||'')}"></div>
+    <div class="field"><label>End</label><input id="sc-end" type="date" value="${esc(c.end||'')}"></div>
+    <div class="field"><label>Priority</label>
+      <select id="sc-pri">
+        <option value="high" ${c.pri==='high'?'selected':''}>High</option>
+        <option value="med" ${c.pri==='med'?'selected':''}>Medium</option>
+        <option value="low" ${c.pri==='low'?'selected':''}>Low</option>
+      </select>
+    </div>
+    <div class="btnrow">
+      <button class="btn alt" onclick="closeSheet()">Cancel</button>
+      <button class="btn" onclick="saveCal(${JSON.stringify(id)})">Save</button>
+    </div>
+  `);
+}
+function saveCal(id){
+  const body={what:$('sc-what').value.trim(),start:$('sc-start').value,end:$('sc-end').value,pri:$('sc-pri').value};
+  db.ref('ops/cal/'+id).update(body).then(()=>{closeSheet();toast('Saved');}).catch(e=>toast('⚠ '+e.message));
+}
+function newCal(){
+  openSheet(`
+    <h2>New calendar event</h2>
+    <div class="field"><label>What</label><input id="nc-what" placeholder="e.g. Belfast market" autofocus></div>
+    <div class="field"><label>Start</label><input id="nc-start" type="date"></div>
+    <div class="field"><label>End</label><input id="nc-end" type="date"></div>
+    <div class="field"><label>Priority</label>
+      <select id="nc-pri"><option value="high">High</option><option value="med" selected>Medium</option><option value="low">Low</option></select>
+    </div>
+    <div class="btnrow">
+      <button class="btn alt" onclick="closeSheet()">Cancel</button>
+      <button class="btn" onclick="createCal()">Add</button>
+    </div>
+  `);
+}
+function createCal(){
+  const what=$('nc-what').value.trim();
+  if(!what){toast('⚠ Needs a title');return;}
+  const now=new Date(); const created=now.toISOString().slice(0,16).replace('T',' ');
+  const body={what,start:$('nc-start').value,end:$('nc-end').value,pri:$('nc-pri').value,done:false,created};
+  db.ref('ops/cal').push(body).then(()=>{closeSheet();toast('Added to calendar');switchTab('cal');}).catch(e=>toast('⚠ '+e.message));
+}
+
+/* ===================== FAB (context-aware add) + sheet host ===================== */
+function openAddSheet(){
+  if(curTab==='jobs')return newJob();
+  if(curTab==='cal')return newCal();
+  if(curTab==='filament'){
+    openSheet(`
+      <h2>New filament colour</h2>
+      <div class="field"><label>Name</label><input id="nf-name" placeholder="e.g. Lilac Purple" autofocus></div>
+      <div class="field"><label>Type</label><input id="nf-type" placeholder="PLA Basic / PLA Matte / PETG…"></div>
+      <div class="field"><label>Owner</label><select id="nf-owner"><option value="J">Jammin</option><option value="B">James</option></select></div>
+      <div class="field"><label>Starting kg</label><input id="nf-kg" type="number" step="0.1" value="1"></div>
+      <div class="field"><label>Swatch colour (hex)</label><input id="nf-sw" value="#888888"></div>
+      <div class="btnrow">
+        <button class="btn alt" onclick="closeSheet()">Cancel</button>
+        <button class="btn" onclick="createFil()">Add</button>
+      </div>
+    `);
+    return;
+  }
+  if(curTab==='stock'){
+    openSheet(`
+      <h2>New stock line</h2>
+      <div class="field"><label>Product name</label><input id="ns-name" placeholder="e.g. Eevee Ball" autofocus></div>
+      <div class="field"><label>Category</label><input id="ns-cat" placeholder="Pokémon / Dragons / Keyrings…"></div>
+      <div class="field"><label>Quantity</label><input id="ns-qty" type="number" step="1" value="0"></div>
+      <div class="field"><label>Price (£)</label><input id="ns-price" type="number" step="0.01" value="0"></div>
+      <div class="btnrow">
+        <button class="btn alt" onclick="closeSheet()">Cancel</button>
+        <button class="btn" onclick="createStock()">Add</button>
+      </div>
+    `);
+    return;
+  }
+}
+function createFil(){
+  const name=$('nf-name').value.trim();
+  if(!name){toast('⚠ Needs a name');return;}
+  const body={name,type:$('nf-type').value.trim(),owner:$('nf-owner').value,kg:+$('nf-kg').value,min:0.3,spools:0,sw:$('nf-sw').value.trim()||'#888888'};
+  db.ref('ops/filament/'+name).set(body).then(()=>{closeSheet();toast('Added '+name);switchTab('filament');}).catch(e=>toast('⚠ '+e.message));
+}
+function createStock(){
+  const name=$('ns-name').value.trim();
+  if(!name){toast('⚠ Needs a name');return;}
+  const body={cat:$('ns-cat').value.trim()||'Uncategorised',qty:+$('ns-qty').value,price:+$('ns-price').value};
+  db.ref('ops/stock/'+name).set(body).then(()=>{closeSheet();toast('Added '+name);switchTab('stock');}).catch(e=>toast('⚠ '+e.message));
+}
+
+function openSheet(innerHtml){
+  $('sheetHost').innerHTML=`<div class="sheet-overlay" onclick="if(event.target===this)closeSheet()">
+    <div class="sheet"><div class="handle"></div>${innerHtml}</div>
+  </div>`;
+}
+function closeSheet(){$('sheetHost').innerHTML='';}
+
+boot();
+</script>
+</body>
+</html>
